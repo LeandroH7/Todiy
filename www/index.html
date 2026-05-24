@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>TODIY 1.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Exo+2:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:#050a12; --blue:#4fc3f7; --purple:#a855f7;
+  --cyan:#00e5ff; --text:#e0eaf5; --text-dim:rgba(180,210,240,0.5);
+}
+html,body {
+  width:100%; height:100%; background:var(--bg);
+  font-family:'Exo 2',sans-serif; color:var(--text);
+  overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none;
+}
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image:radial-gradient(circle at 1px 1px,rgba(79,195,247,0.1) 1px,transparent 0);
+  background-size:28px 28px; pointer-events:none; z-index:0;
+}
+.scan-line {
+  position:fixed; left:0; right:0; height:1.5px;
+  background:linear-gradient(90deg,transparent,var(--cyan) 40%,var(--purple) 60%,transparent);
+  opacity:0; z-index:2; pointer-events:none;
+  animation:scanAnim 9s ease-in-out infinite;
+}
+@keyframes scanAnim {
+  0%{top:4%;opacity:0} 5%{opacity:0.2} 95%{opacity:0.2} 100%{top:91%;opacity:0}
+}
+.hud-c {
+  position:fixed; width:50px; height:50px;
+  pointer-events:none; z-index:1; opacity:0.3;
+}
+.hud-c.tl{top:56px;left:14px;border-top:1.5px solid var(--blue);border-left:1.5px solid var(--blue)}
+.hud-c.tr{top:56px;right:14px;border-top:1.5px solid var(--blue);border-right:1.5px solid var(--blue)}
+.hud-c.bl{bottom:112px;left:14px;border-bottom:1.5px solid var(--purple);border-left:1.5px solid var(--purple)}
+.hud-c.br{bottom:112px;right:14px;border-bottom:1.5px solid var(--purple);border-right:1.5px solid var(--purple)}
+.mini-chart {
+  position:fixed; right:10px; bottom:150px;
+  display:flex; align-items:flex-end; gap:2px;
+  opacity:0.28; pointer-events:none; z-index:1;
+}
+.mini-chart span {
+  width:4px; background:var(--blue); border-radius:2px 2px 0 0;
+  animation:barAnim 2.4s ease-in-out infinite;
+}
+.mini-chart span:nth-child(1){height:10px;animation-delay:0s}
+.mini-chart span:nth-child(2){height:18px;animation-delay:.2s}
+.mini-chart span:nth-child(3){height:12px;animation-delay:.4s}
+.mini-chart span:nth-child(4){height:22px;animation-delay:.1s}
+.mini-chart span:nth-child(5){height:8px;animation-delay:.3s}
+@keyframes barAnim{0%,100%{opacity:.5}50%{opacity:1}}
+.top-clock {
+  position:fixed; top:14px; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  pointer-events:none; z-index:20;
+}
+.clock-time {
+  font-family:'Orbitron',monospace; font-size:13px; font-weight:500;
+  letter-spacing:0.18em; color:var(--text-dim);
+}
+.clock-date {
+  font-family:'Orbitron',monospace; font-size:9px; font-weight:400;
+  letter-spacing:0.2em; color:rgba(79,195,247,0.45);
+}
+.hud-lbl {
+  position:fixed; font-family:'Orbitron',monospace;
+  font-size:9px; letter-spacing:0.12em; color:var(--text-dim);
+  pointer-events:none; z-index:1;
+}
+.hl-tl{top:68px;left:72px}
+.hl-tr{top:68px;right:72px;text-align:right}
+.hl-br{bottom:120px;right:200px;text-align:right}
+#app {
+  position:relative; width:100%; height:100%;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:space-between;
+  padding:58px 0 26px; z-index:10;
+}
+.app-title {
+  font-family:'Orbitron',monospace; font-size:14px; font-weight:500;
+  letter-spacing:0.32em; color:var(--text-dim); text-transform:uppercase;
+  margin-top:10px;
+}
+.orb-wrapper {
+  position:relative; width:min(70vw,290px); aspect-ratio:1;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.orb-glow {
+  position:absolute; width:58%; height:58%; border-radius:50%;
+  background:radial-gradient(circle,rgba(79,195,247,.28) 0%,rgba(168,85,247,.18) 55%,transparent 80%);
+  filter:blur(20px); animation:glowIdle 3s ease-in-out infinite;
+  pointer-events:none; z-index:1;
+}
+@keyframes glowIdle{0%,100%{opacity:.7;transform:scale(.95)}50%{opacity:1;transform:scale(1.08)}}
+.poly-ring {
+  position:absolute; inset:0;
+  animation:ringRotate linear infinite; pointer-events:none; z-index:2;
+}
+.poly-ring svg{width:100%;height:100%;position:absolute;inset:0}
+.poly-ring:nth-child(3){animation-duration:20s;animation-direction:normal}
+.poly-ring:nth-child(4){animation-duration:15s;animation-direction:reverse}
+.poly-ring:nth-child(5){animation-duration:24s;animation-direction:normal}
+.poly-ring:nth-child(6){animation-duration:11s;animation-direction:reverse}
+.poly-ring:nth-child(7){animation-duration:28s;animation-direction:normal}
+.poly-ring:nth-child(8){animation-duration:9s;animation-direction:reverse}
+@keyframes ringRotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.orb-wrapper.speaking .poly-ring:nth-child(3){animation-duration:5s}
+.orb-wrapper.speaking .poly-ring:nth-child(4){animation-duration:4s}
+.orb-wrapper.speaking .poly-ring:nth-child(5){animation-duration:6s}
+.orb-wrapper.speaking .poly-ring:nth-child(6){animation-duration:3s}
+.orb-wrapper.speaking .poly-ring:nth-child(7){animation-duration:7s}
+.orb-wrapper.speaking .poly-ring:nth-child(8){animation-duration:2.5s}
+.orb-face-wrap {
+  position:absolute; width:65%; height:65%;
+  display:flex; align-items:center; justify-content:center;
+  z-index:5; pointer-events:none;
+}
+.face-body{position:absolute;inset:0}
+.eyes-row {
+  position:relative; z-index:2;
+  display:flex; gap:18%; align-items:center; justify-content:center;
+  width:80%; height:80%;
+}
+.eye {
+  width:26%; height:46%; background:#060c18; border-radius:38%;
+}
+.status-block {
+  text-align:center; padding:0 20px; min-height:76px;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:7px;
+}
+.status-title {
+  font-family:'Orbitron',monospace;
+  font-size:clamp(17px,5.2vw,24px); font-weight:700;
+  letter-spacing:0.07em; text-transform:uppercase;
+  color:var(--text); transition:all .35s ease; line-height:1.2;
+}
+.status-sub {
+  font-size:clamp(11px,3.3vw,13px); font-weight:300;
+  letter-spacing:0.04em; color:var(--text-dim); transition:all .35s ease;
+}
+.think-dots{display:none;gap:6px;align-items:center;justify-content:center}
+.think-dots.on{display:flex}
+.think-dots span {
+  width:6px;height:6px;border-radius:50%;background:var(--blue);
+  animation:dotAnim 1.2s ease-in-out infinite;
+}
+.think-dots span:nth-child(2){animation-delay:.2s;background:var(--purple)}
+.think-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dotAnim{0%,80%,100%{transform:scale(.5);opacity:.4}40%{transform:scale(1);opacity:1}}
+.control-bar {
+  width:min(68vw,300px); height:86px;
+  background:rgba(10,20,36,0.88);
+  border:1px solid rgba(79,195,247,0.22); border-radius:26px;
+  backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+  display:flex; align-items:center; justify-content:space-around; padding:0 22px;
+  box-shadow:0 0 28px rgba(79,195,247,0.07),inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.ctrl-btn {
+  width:60px; height:60px; border-radius:50%; border:none; cursor:pointer;
+  background:radial-gradient(circle at 35% 30%,#d4ecff,#8ab8d8 58%,#5a8aaa);
+  box-shadow:0 4px 22px rgba(79,195,247,.38),0 0 0 5px rgba(79,195,247,.10),inset 0 2px 4px rgba(255,255,255,.5);
+  display:flex; align-items:center; justify-content:center;
+  transition:all .2s ease; flex-shrink:0;
+}
+.ctrl-btn:active{transform:scale(.91)}
+.ctrl-btn svg{width:24px;height:24px}
+.ctrl-btn.mic-active {
+  background:radial-gradient(circle at 35% 30%,#b8e4ff,#4fc3f7 58%,#0288d1);
+  box-shadow:0 4px 26px rgba(79,195,247,.7),0 0 0 8px rgba(79,195,247,.18),inset 0 2px 4px rgba(255,255,255,.4);
+  animation:micPulse 1s ease-in-out infinite;
+}
+@keyframes micPulse{
+  0%,100%{box-shadow:0 4px 26px rgba(79,195,247,.7),0 0 0 8px rgba(79,195,247,.18)}
+  50%{box-shadow:0 4px 36px rgba(79,195,247,.9),0 0 0 14px rgba(79,195,247,.08)}
+}
+.text-bar {
+  position:fixed; bottom:0; left:0; right:0;
+  background:rgba(4,9,17,.97);
+  border-top:1px solid rgba(79,195,247,.2); padding:12px 14px;
+  display:flex; gap:8px; align-items:center;
+  transform:translateY(100%);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  z-index:100; backdrop-filter:blur(22px);
+}
+.text-bar.open{transform:translateY(0)}
+.txt-close {
+  width:40px; height:40px; border-radius:10px;
+  border:1px solid rgba(79,195,247,.3); background:transparent;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.txt-close svg{width:17px;height:17px;color:var(--text-dim)}
+.txt-input {
+  flex:1; background:rgba(79,195,247,.07);
+  border:1px solid rgba(79,195,247,.3); border-radius:13px;
+  padding:11px 15px; color:var(--text);
+  font-family:'Exo 2',sans-serif; font-size:14px; outline:none;
+}
+.txt-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(79,195,247,.1)}
+.txt-input::placeholder{color:var(--text-dim)}
+.txt-send {
+  width:42px; height:42px; border-radius:11px; border:none;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.txt-send:active{transform:scale(.91)}
+.txt-send svg{width:17px;height:17px;color:white}
+.toast-layer {
+  position:fixed; inset:0; display:flex;
+  align-items:flex-end; justify-content:center;
+  padding-bottom:120px; pointer-events:none; z-index:50;
+}
+.toast-box {
+  max-width:min(82vw,360px);
+  background:rgba(8,18,34,.93);
+  border:1px solid rgba(79,195,247,.28); border-radius:17px;
+  padding:13px 17px; font-size:13.5px; line-height:1.55;
+  color:var(--text); backdrop-filter:blur(16px);
+  box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 18px rgba(79,195,247,.1);
+  transform:translateY(18px); opacity:0;
+  transition:all .4s cubic-bezier(.34,1.56,.64,1);
+}
+.toast-box.show{transform:translateY(0);opacity:1}
+.chips {
+  position:fixed; top:54px; left:0; right:0;
+  display:flex; justify-content:center; gap:8px; padding:0 14px;
+  z-index:20; pointer-events:none; opacity:0;
+  transform:translateY(-6px); transition:all .3s ease;
+}
+.chips.on{opacity:1;transform:translateY(0);pointer-events:all}
+.chip {
+  background:rgba(79,195,247,.09); border:1px solid rgba(79,195,247,.28);
+  border-radius:18px; padding:5px 11px;
+  font-size:10px; font-family:'Orbitron',monospace; letter-spacing:.05em;
+  color:var(--blue); cursor:pointer; white-space:nowrap; transition:all .2s ease;
+}
+.chip:active{background:rgba(79,195,247,.2);transform:scale(.95)}
+</style>
+</head>
+<body>
+<div class="scan-line"></div>
+<div class="hud-c tl"></div>
+<div class="hud-c tr"></div>
+<div class="hud-c bl"></div>
+<div class="hud-c br"></div>
+<div class="top-clock">
+  <div class="clock-time" id="clockTime">00:00</div>
+  <div class="clock-date" id="clockDate">--/--/----</div>
+</div>
+<div class="hud-lbl hl-tl" id="lblBat">BAT —%</div>
+<div class="hud-lbl hl-tr">SYS OK</div>
+<div class="hud-lbl hl-br">ONLINE</div>
+<div class="mini-chart">
+  <span></span><span></span><span></span><span></span><span></span>
+</div>
+<div class="chips" id="chips">
+  <div class="chip" onclick="runCmd('bateria')">BATERIA</div>
+  <div class="chip" onclick="runCmd('liga lanterna')">LANTERNA</div>
+  <div class="chip" onclick="runCmd('hora')">HORA</div>
+  <div class="chip" onclick="runCmd('wifi')">WI-FI</div>
+</div>
+<div id="app">
+  <div class="app-title">TODIY 1.0</div>
+  <div class="orb-wrapper" id="orb">
+    <div class="orb-glow" id="orbGlow"></div>
+    <div class="poly-ring"><svg viewBox="0 0 200 200" fill="none">
+      <polygon points="100,8 184,54 184,146 100,192 16,146 16,54"
+        stroke="rgba(79,195,247,0.6)" stroke-width="1.3" fill="none"/></svg></div>
+    <div class="poly-ring"><svg viewBox="0 0 200 200" fill="none">
+      <polygon points="100,14 178,58 178,142 100,186 22,142 22,58"
+        stroke="rgba(168,85,247,0.48)" stroke-width="1.1" fill="none"/></svg></div>
+    <div class="poly-ring"><svg viewBox="0 0 200 200" fill="none">
+      <rect x="26" y="26" width="148" height="148" rx="4"
+        stroke="rgba(79,195,247,0.32)" stroke-width="1" fill="none"/></svg></div>
+    <div class="poly-ring"><svg viewBox="0 0 200 200" fill="none">
+      <polygon points="100,20 174,62 174,138 100,180 26,138 26,62"
+        stroke="rgba(0,229,255,0.28)" stroke-width="0.8" fill="none"/></svg></div>
+    <div class="poly-ring"><svg viewBox="0 0 200 200" fill="none">
+      <rect x="20" y="20" width="160" height="160" rx="6"
+        transform="rotate(22.5 100 100)"
+        stroke="rgba(168,85,247,0.22)" stroke-width="0.7" fill="none"/></svg></div>
+    <div class="poly-ring"><svg viewBox="0 0 200 200" fill="none">
+      <polygon points="100,4 196,52 196,148 100,196 4,148 4,52"
+        stroke="rgba(79,195,247,0.14)" stroke-width="0.6" fill="none"/></svg></div>
+    <div class="orb-face-wrap" id="face">
+      <svg class="face-body" viewBox="0 0 120 120" fill="none">
+        <polygon points="60,4 108,30 108,90 60,116 12,90 12,30"
+          fill="#080f1c" stroke="rgba(79,195,247,0.55)" stroke-width="1.5"/>
+        <polygon points="60,4 108,30 108,90 60,116 12,90 12,30"
+          fill="url(#fg)" opacity="0.18"/>
+        <defs>
+          <linearGradient id="fg" x1="60" y1="4" x2="60" y2="116" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#4fc3f7"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="eyes-row">
+        <div class="eye" id="eyeL"></div>
+        <div class="eye" id="eyeR"></div>
+      </div>
+    </div>
+  </div>
+  <div class="status-block">
+    <div class="status-title" id="sTitle">COMO POSSO AJUDAR?</div>
+    <div class="status-sub"   id="sSub">Aguardando seu comando, senhor</div>
+    <div class="think-dots"   id="dots"><span></span><span></span><span></span></div>
+  </div>
+  <div class="control-bar">
+    <button class="ctrl-btn" id="btnMic" onclick="toggleMic()" title="Microfone">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1a3a52" stroke-width="2.2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="2" width="6" height="12" rx="3"/>
+        <path d="M5 10a7 7 0 0 0 14 0"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+        <line x1="9" y1="21" x2="15" y2="21"/>
+      </svg>
+    </button>
+    <button class="ctrl-btn" id="btnKbd" onclick="toggleKbd()" title="Teclado">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1a3a52" stroke-width="1.9"
+           stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="5" width="20" height="14" rx="2"/>
+        <line x1="6" y1="9" x2="6" y2="9.01"/>
+        <line x1="10" y1="9" x2="10" y2="9.01"/>
+        <line x1="14" y1="9" x2="14" y2="9.01"/>
+        <line x1="18" y1="9" x2="18" y2="9.01"/>
+        <line x1="8" y1="13" x2="8" y2="13.01"/>
+        <line x1="12" y1="13" x2="12" y2="13.01"/>
+        <line x1="16" y1="13" x2="16" y2="13.01"/>
+        <line x1="7" y1="17" x2="17" y2="17"/>
+      </svg>
+    </button>
+  </div>
+</div>
+<div class="text-bar" id="textBar">
+  <button class="txt-close" onclick="toggleKbd()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+  <input class="txt-input" id="txtIn" type="text"
+         placeholder="Digite seu comando..."
+         onkeydown="if(event.key==='Enter')sendTxt()">
+  <button class="txt-send" onclick="sendTxt()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"/>
+      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+    </svg>
+  </button>
+</div>
+<div class="toast-layer">
+  <div class="toast-box" id="toast"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// TODIY 1.0 — Engine principal (revisão completa)
+// ─ TTS: @capacitor-community/text-to-speech (APK) + Web Speech (browser)
+// ─ STT: @capacitor-community/speech-recognition (APK) + webkitSpeechRecognition (browser)
+// ─ Bateria: @capacitor/device (APK) + Battery Status API (browser)
+// ─ Plugins carregados via Promise — sem race condition
+// ═══════════════════════════════════════════════════════════════
+
+const S = {
+  status:'idle', micOn:false, kbdOn:false,
+  torch:false,
+  TTS:null, STT:null, Notif:null, Haptics:null, App:null, Device:null,
+  isNative:false,
+  ready:false,
+};
+
+const orb    = document.getElementById('orb');
+const glow   = document.getElementById('orbGlow');
+const sTitle = document.getElementById('sTitle');
+const sSub   = document.getElementById('sSub');
+const dots   = document.getElementById('dots');
+const btnMic = document.getElementById('btnMic');
+const toast  = document.getElementById('toast');
+const textBar= document.getElementById('textBar');
+const txtIn  = document.getElementById('txtIn');
+const chips  = document.getElementById('chips');
+
+// ── RELÓGIO ──────────────────────────────────────────────────
+function tick() {
+  const n  = new Date();
+  document.getElementById('clockTime').textContent =
+    String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('clockDate').textContent =
+    String(n.getDate()).padStart(2,'0') + '/' +
+    String(n.getMonth()+1).padStart(2,'0') + '/' + n.getFullYear();
+}
+tick(); setInterval(tick, 10000);
+
+// ── INIT CAPACITOR ───────────────────────────────────────────
+// Usa Promise para garantir que plugins só são usados após carregarem
+async function initCapacitor() {
+  if (!window.Capacitor) return;
+  S.isNative = true;
+
+  const P = Capacitor.Plugins;
+
+  // Carrega cada plugin com fallback seguro
+  S.TTS     = P.TextToSpeech      || null;
+  S.STT     = P.SpeechRecognition || null;
+  S.Notif   = P.LocalNotifications|| null;
+  S.Haptics = P.Haptics           || null;
+  S.App     = P.App               || null;
+  S.Device  = P.Device            || null;
+
+  // Esconde splash
+  try { await P.SplashScreen?.hide(); } catch(e){}
+
+  // Pede permissões necessárias
+  try { await S.Notif?.requestPermissions(); } catch(e){}
+  try { await S.STT?.requestPermissions();   } catch(e){}
+
+  // Bateria inicial no label
+  try {
+    const b = await S.Device?.getBatteryInfo();
+    if (b) {
+      const pct = Math.round((b.batteryLevel||0)*100);
+      document.getElementById('lblBat').textContent = 'BAT ' + pct + '%';
+    }
+  } catch(e){}
+
+  S.ready = true;
+  console.log('[TODIY] Capacitor pronto. TTS:', !!S.TTS, 'STT:', !!S.STT);
+}
+
+// Aguarda o Capacitor estar pronto antes de tentar usar plugins
+window.addEventListener('load', async () => {
+  // Tenta imediatamente (pode já estar pronto)
+  if (window.Capacitor) {
+    await initCapacitor();
+  } else {
+    // Aguarda até 3 segundos pelo Capacitor
+    let tries = 0;
+    const interval = setInterval(async () => {
+      tries++;
+      if (window.Capacitor) {
+        clearInterval(interval);
+        await initCapacitor();
+      } else if (tries > 30) {
+        clearInterval(interval);
+        console.log('[TODIY] Modo browser (sem Capacitor)');
+        S.ready = true;
+      }
+    }, 100);
+  }
+});
+
+// ── ORB STATE ────────────────────────────────────────────────
+function setOrbState(state) {
+  S.status = state;
+  orb.className = 'orb-wrapper ' + state;
+  const cfgs = {
+    idle:      { c:'rgba(79,195,247,.28) 0%,rgba(168,85,247,.18) 55%', d:'3s',   s:'58%' },
+    listening: { c:'rgba(79,195,247,.55) 0%,rgba(0,229,255,.3) 50%',   d:'.65s', s:'62%' },
+    thinking:  { c:'rgba(168,85,247,.5) 0%,rgba(79,195,247,.28) 55%',  d:'.45s', s:'60%' },
+    speaking:  { c:'rgba(168,85,247,.6) 0%,rgba(79,195,247,.38) 45%',  d:'.28s', s:'64%' },
+  };
+  const c = cfgs[state] || cfgs.idle;
+  glow.style.cssText =
+    `position:absolute;width:${c.s};height:${c.s};border-radius:50%;` +
+    `filter:blur(20px);pointer-events:none;z-index:1;` +
+    `background:radial-gradient(circle,${c.c},transparent 80%);` +
+    `animation:glowIdle ${c.d} ease-in-out infinite;`;
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(txt) {
+  toast.textContent = txt;
+  toast.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 6000);
+}
+
+// ── TTS ──────────────────────────────────────────────────────
+// Fala o texto. No APK usa plugin nativo, no browser usa Web Speech API.
+function speak(text) {
+  setOrbState('speaking');
+  sTitle.textContent = 'RESPONDENDO';
+  sSub.textContent   = text.length > 55 ? text.slice(0,55)+'…' : text;
+  dots.classList.remove('on');
+  showToast(text);
+
+  const onDone = () => {
+    setOrbState('idle');
+    sTitle.textContent = 'COMO POSSO AJUDAR?';
+    sSub.textContent   = 'Aguardando seu comando, senhor';
+  };
+
+  // ── APK: plugin nativo TTS ──
+  if (S.isNative && S.TTS) {
+    S.TTS.speak({
+      text:   text,
+      lang:   'pt-BR',
+      rate:   1.0,
+      pitch:  0.9,
+      volume: 1.0,
+    }).then(onDone).catch(err => {
+      console.warn('[TTS nativo erro]', err);
+      // Tenta Web Speech como fallback
+      _webSpeech(text, onDone);
+    });
+    return;
+  }
+
+  // ── Browser: Web Speech API ──
+  _webSpeech(text, onDone);
+}
+
+function _webSpeech(text, onDone) {
+  if (!window.speechSynthesis) { setTimeout(onDone, 1500); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang  = 'pt-BR';
+  u.rate  = 1.0;
+  u.pitch = 0.9;
+
+  // Tenta encontrar voz pt-BR
+  const trySpeak = () => {
+    const vs = window.speechSynthesis.getVoices();
+    const pt = vs.find(v => v.lang === 'pt-BR')
+            || vs.find(v => v.lang.startsWith('pt'))
+            || null;
+    if (pt) u.voice = pt;
+    u.onend = u.onerror = onDone;
+    window.speechSynthesis.speak(u);
+  };
+
+  // Vozes podem não estar prontas imediatamente
+  if (window.speechSynthesis.getVoices().length > 0) {
+    trySpeak();
+  } else {
+    window.speechSynthesis.onvoiceschanged = () => { trySpeak(); };
+    // Timeout de segurança — fala mesmo sem voz pt-BR
+    setTimeout(() => {
+      if (window.speechSynthesis.getVoices().length === 0) {
+        u.onend = u.onerror = onDone;
+        window.speechSynthesis.speak(u);
+      }
+    }, 500);
+  }
+}
+
+// ── STT ──────────────────────────────────────────────────────
+let micBusy = false;
+
+async function startMic() {
+  if (micBusy) { stopMic(); return; }
+  micBusy = true;
+  S.micOn = true;
+  btnMic.classList.add('mic-active');
+  setOrbState('listening');
+  sTitle.textContent = 'OUVINDO...';
+  sSub.textContent   = 'Fale seu comando, senhor';
+
+  // ── APK: plugin nativo STT ──
+  if (S.isNative && S.STT) {
+    try {
+      // Verifica permissão antes de iniciar
+      const perm = await S.STT.checkPermissions();
+      if (perm.speechRecognition !== 'granted') {
+        await S.STT.requestPermissions();
+      }
+      const result = await S.STT.start({
+        language:       'pt-BR',
+        maxResults:     1,
+        partialResults: false,
+        popup:          false,
+      });
+      const heard = (result.matches && result.matches[0]) || '';
+      stopMic();
+      if (heard.trim()) {
+        runCmd(heard);
+      } else {
+        sSub.textContent = 'Não ouvi nada. Tente novamente, senhor.';
+        setTimeout(() => {
+          sTitle.textContent = 'COMO POSSO AJUDAR?';
+          sSub.textContent   = 'Aguardando seu comando, senhor';
+        }, 2000);
+      }
+    } catch(e) {
+      console.warn('[STT erro]', e);
+      stopMic();
+      sTitle.textContent = 'COMO POSSO AJUDAR?';
+      sSub.textContent   = 'Erro no microfone. Use o teclado, senhor.';
+    }
+    return;
+  }
+
+  // ── Browser: webkitSpeechRecognition ──
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    stopMic();
+    speak('Microfone não disponível. Use o teclado, senhor.');
+    return;
+  }
+  const r = new SR();
+  r.lang            = 'pt-BR';
+  r.continuous      = false;
+  r.interimResults  = false;
+  r.maxAlternatives = 1;
+  r.onresult = e => {
+    stopMic();
+    runCmd(e.results[0][0].transcript);
+  };
+  r.onerror = () => {
+    stopMic();
+    sTitle.textContent = 'COMO POSSO AJUDAR?';
+    sSub.textContent   = 'Não ouvi nada, senhor';
+  };
+  r.onend = () => { if (S.micOn) stopMic(); };
+  try { r.start(); } catch(e) { stopMic(); }
+}
+
+function stopMic() {
+  micBusy = false;
+  S.micOn = false;
+  btnMic.classList.remove('mic-active');
+}
+
+function toggleMic() {
+  if (S.micOn) {
+    stopMic();
+    setOrbState('idle');
+    sTitle.textContent = 'COMO POSSO AJUDAR?';
+    sSub.textContent   = 'Aguardando seu comando, senhor';
+  } else {
+    startMic();
+  }
+}
+
+// ── COMANDO ──────────────────────────────────────────────────
+function runCmd(raw) {
+  if (!raw || !raw.trim()) return;
+  const txt = raw.trim().toLowerCase();
+  setOrbState('thinking');
+  sTitle.textContent = 'PROCESSANDO';
+  sSub.textContent   = '"' + (raw.length>40 ? raw.slice(0,40)+'…' : raw) + '"';
+  dots.classList.add('on');
+  setTimeout(() => {
+    dots.classList.remove('on');
+    const resp = handle(txt);
+    if (resp) speak(resp);
+  }, 350);
+}
+
+// ── ENGINE DE COMANDOS ────────────────────────────────────────
+function handle(t) {
+  const has = (...w) => w.some(x => t.includes(x));
+  const rx  = p => new RegExp(p,'i').test(t);
+  const num = () => { const m=t.match(/(\d+)/); return m?parseInt(m[1]):null; };
+
+  // SAUDAÇÃO
+  if (has('oi','olá','ola','hey','bom dia','boa tarde','tudo bem','eai','e aí')) {
+    const h=new Date().getHours();
+    return (h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')+', senhor! Como posso te ajudar?';
+  }
+
+  // HORA
+  if (has('hora','horas','que horas')) {
+    const n=new Date();
+    return `São ${n.getHours()} horas e ${String(n.getMinutes()).padStart(2,'0')} minutos, senhor.`;
+  }
+
+  // DATA
+  if (has('data','que dia','dia da semana','hoje')) {
+    const n=new Date();
+    const d=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+    const m=['janeiro','fevereiro','março','abril','maio','junho','julho',
+             'agosto','setembro','outubro','novembro','dezembro'];
+    return `${d[n.getDay()]}, ${n.getDate()} de ${m[n.getMonth()]} de ${n.getFullYear()}.`;
+  }
+
+  // BATERIA — lê o valor real do dispositivo
+  if (has('bateria','carga')) {
+    if (S.isNative && S.Device) {
+      S.Device.getBatteryInfo().then(info => {
+        const pct  = Math.round((info.batteryLevel||0)*100);
+        const stat = info.isCharging ? 'carregando' : 'descarregando';
+        document.getElementById('lblBat').textContent = 'BAT '+pct+'%';
+        speak(`Bateria em ${pct} por cento, ${stat}, senhor.`);
+      }).catch(() => speak('Não consegui ler a bateria, senhor.'));
+      // Retorna null para não falar duas vezes (speak() é chamado no .then)
+      return null;
+    }
+    // Browser: Battery Status API
+    if (navigator.getBattery) {
+      navigator.getBattery().then(b => {
+        const pct  = Math.round(b.level*100);
+        const stat = b.charging ? 'carregando' : 'descarregando';
+        speak(`Bateria em ${pct} por cento, ${stat}, senhor.`);
+      }).catch(() => speak('Bateria não disponível no navegador, senhor.'));
+      return null;
+    }
+    return 'Não consegui ler a bateria neste dispositivo, senhor.';
+  }
+
+  // LANTERNA
+  if (has('lanterna','tocha','flash')) {
+    const blink = t.match(/(?:pisca|blink).*?(\d+)/);
+    if (blink) {
+      if (S.isNative) {
+        let i=0, n=parseInt(blink[1]);
+        const iv = setInterval(async()=>{
+          try {
+            if(i%2===0) await Capacitor.Plugins.Torch?.enable();
+            else        await Capacitor.Plugins.Torch?.disable();
+          }catch(e){}
+          i++;
+          if(i>=n*2){ clearInterval(iv); Capacitor.Plugins.Torch?.disable().catch(()=>{}); }
+        },400);
+      }
+      return `Lanterna piscando ${blink[1]} vezes, senhor.`;
+    }
+    if (has('desliga','apaga','off')) {
+      if (S.isNative) Capacitor.Plugins.Torch?.disable().catch(()=>{});
+      S.torch=false;
+      return 'Lanterna desligada, senhor.';
+    }
+    S.torch = !S.torch;
+    if (S.isNative) {
+      if(S.torch) Capacitor.Plugins.Torch?.enable().catch(()=>{});
+      else        Capacitor.Plugins.Torch?.disable().catch(()=>{});
+    }
+    return S.torch ? 'Lanterna ligada, senhor.' : 'Lanterna desligada, senhor.';
+  }
+
+  // WI-FI
+  if (rx('wi.?fi')) {
+    if (S.isNative && S.App)
+      S.App.openUrl({url:'intent:#Intent;action=android.settings.WIFI_SETTINGS;end'}).catch(()=>{});
+    return 'Abrindo configurações de Wi-Fi, senhor.';
+  }
+
+  // BLUETOOTH
+  if (has('bluetooth')) {
+    if (S.isNative && S.App)
+      S.App.openUrl({url:'intent:#Intent;action=android.settings.BLUETOOTH_SETTINGS;end'}).catch(()=>{});
+    return 'Abrindo configurações de Bluetooth, senhor.';
+  }
+
+  // DADOS MÓVEIS
+  if (has('dados','internet móvel','internet movel')) {
+    if (S.isNative && S.App)
+      S.App.openUrl({url:'intent:#Intent;action=android.settings.DATA_ROAMING_SETTINGS;end'}).catch(()=>{});
+    return 'Abrindo configurações de dados móveis, senhor.';
+  }
+
+  // VOLUME
+  if (has('volume','som')) {
+    if (has('muta','mute','silencia')) return 'Silenciando, senhor.';
+    if (has('desmuta','unmute'))       return 'Som restaurado, senhor.';
+    const n=num();
+    if (n!==null) return `Ajustando volume para ${n}, senhor.`;
+    if (has('aumenta','sobe','cima'))  return 'Volume aumentado, senhor.';
+    if (has('diminui','desce','baixo'))return 'Volume reduzido, senhor.';
+    return 'Qual nível de volume, senhor?';
+  }
+  if (has('muta','silencia'))  return 'Silenciando, senhor.';
+  if (has('desmuta','unmute')) return 'Som restaurado, senhor.';
+
+  // BRILHO
+  if (has('brilho','luminosidade')) {
+    if (has('auto','automático')) return 'Brilho automático, senhor.';
+    if (has('aumenta','sobe'))    return 'Brilho aumentado, senhor.';
+    if (has('diminui','desce'))   return 'Brilho reduzido, senhor.';
+    const n=num(); if(n!==null)   return `Brilho em ${n} por cento, senhor.`;
+    return 'Qual nível de brilho, senhor?';
+  }
+
+  // VIBRAÇÃO
+  if (has('vibra','vibrar')) {
+    if (S.isNative && S.Haptics)
+      S.Haptics.vibrate({duration:500}).catch(()=>{});
+    return 'Vibração executada, senhor.';
+  }
+
+  // SCREENSHOT
+  if (has('screenshot','captura','print')) return 'Capturando a tela, senhor.';
+
+  // ABRIR APP
+  const openM = t.match(/\b(?:abre|abrir|lança|inicia|abra)\b\s+(?:o\s+|a\s+)?(.+)/);
+  if (openM) {
+    const pkgMap = {
+      'whatsapp':'com.whatsapp','youtube':'com.google.android.youtube',
+      'instagram':'com.instagram.android','spotify':'com.spotify.music',
+      'chrome':'com.android.chrome','gmail':'com.google.android.gm',
+      'maps':'com.google.android.apps.maps','telegram':'org.telegram.messenger',
+      'tiktok':'com.zhiliaoapp.musically','facebook':'com.facebook.katana',
+      'nubank':'com.nu.production','ifood':'br.com.brainweb.ifood',
+      'uber':'com.ubercab','netflix':'com.netflix.mediaclient',
+      'discord':'com.discord','twitter':'com.twitter.android',
+      'x':'com.twitter.android','drive':'com.google.android.apps.docs',
+      'meet':'com.google.android.apps.tachyon',
+      'configurações':'com.android.settings','configuracoes':'com.android.settings',
+      'calculadora':'com.android.calculator2','câmera':'com.android.camera2',
+      'camera':'com.android.camera2','acode':'com.foxdebug.acodefree',
+      'gemini':'com.google.android.apps.bard','fotos':'com.google.android.apps.photos',
+      'play':'com.android.vending','inter':'br.com.intermedium',
+      'bradesco':'com.bradesco','itau':'com.itau','picpay':'com.picpay',
+      'shopee':'com.shopee.br','amazon':'com.amazon.mShop.android.shopping',
+      'linkedin':'com.linkedin.android','snapchat':'com.snapchat.android',
+      'zoom':'us.zoom.videomeetings','teams':'com.microsoft.teams',
+      'outlook':'com.microsoft.office.outlook','kwai':'com.kwai.video',
+      'reddit':'com.reddit.frontpage','pinterest':'com.pinterest',
+      'mercado livre':'com.mercadolibre','shopee':'com.shopee.br',
+      'c6':'com.c6bank.app','neon':'br.com.neon.bank.onboarding',
+    };
+    const name = openM[1].trim().toLowerCase();
+    let pkg = pkgMap[name];
+    if (!pkg) {
+      for (const [k,v] of Object.entries(pkgMap)) {
+        if (name.includes(k) || k.includes(name)) { pkg=v; break; }
+      }
+    }
+    if (pkg && S.isNative && S.App) {
+      S.App.openUrl({url:`intent://launch/#Intent;package=${pkg};scheme=package;end`})
+        .catch(() => S.App.openUrl({url:`market://details?id=${pkg}`}).catch(()=>{}));
+    }
+    return `Abrindo ${openM[1].trim()}, senhor.`;
+  }
+
+  // FECHAR APP
+  const closeM = t.match(/\b(?:fecha|fechar|mata|encerra)\b\s+(?:o\s+|a\s+)?(.+)/);
+  if (closeM) return `${closeM[1].trim()} encerrado, senhor.`;
+
+  // ALARME
+  if (has('alarme','acorda','despertar')) {
+    const hm = t.match(/(\d{1,2})\s*[h:]\s*(\d{0,2})/);
+    if (hm && S.isNative && S.Notif) {
+      const h=parseInt(hm[1]), mi=parseInt(hm[2]||0);
+      const now=new Date();
+      const when=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,mi,0);
+      if(when<=now) when.setDate(when.getDate()+1);
+      S.Notif.schedule({notifications:[{
+        title:'TODIY — Alarme',
+        body:`${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`,
+        id:Math.floor(Math.random()*999999),
+        schedule:{at:when},sound:'default',
+      }]}).catch(e=>console.warn('alarm:',e));
+      return `Alarme criado para ${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}, senhor.`;
+    }
+    if (hm) return `Alarme para ${hm[1].padStart(2,'0')}:${(hm[2]||'00').padStart(2,'0')}, senhor.`;
+    const min=t.match(/daqui.*?(\d+)\s*minuto/);
+    if (min) return `Alarme em ${min[1]} minutos, senhor.`;
+    return 'Qual horário para o alarme, senhor?';
+  }
+
+  // LEMBRETE
+  if (has('lembra','lembre','lembrete')) {
+    const hm=t.match(/(\d{1,2})\s*[h:]\s*(\d{0,2})/);
+    if (hm && S.isNative && S.Notif) {
+      const h=parseInt(hm[1]), mi=parseInt(hm[2]||0);
+      const now=new Date();
+      const when=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,mi,0);
+      if(when<=now) when.setDate(when.getDate()+1);
+      let txt=t.replace(/\b(lembra|lembre|lembrete|de|me|que|às|as|para|todiy)\b/g,'')
+               .replace(/\d{1,2}\s*[h:]\s*\d{0,2}/g,'')
+               .replace(/\s+/g,' ').trim()||'Lembrete TODIY';
+      S.Notif.schedule({notifications:[{
+        title:'TODIY — Lembrete',body:txt,
+        id:Math.floor(Math.random()*999999),
+        schedule:{at:when},sound:'default',
+      }]}).catch(e=>console.warn('lembrete:',e));
+      return `Lembrete "${txt}" para ${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}, senhor.`;
+    }
+    if (hm) return `Lembrete para ${hm[1].padStart(2,'0')}:${(hm[2]||'00').padStart(2,'0')}, senhor.`;
+    return 'Lembrete registrado, senhor.';
+  }
+
+  // MODOS
+  if (has('modo estudo','estudo','foco'))
+    return 'Modo estudo ativado. Foco total, senhor.';
+  if (has('modo dormir','dormir','boa noite'))
+    return 'Modo sono ativado. Boa noite, senhor.';
+  if (has('modo academia','academia','treino','gym'))
+    return 'Modo academia ativado. Bom treino, senhor.';
+
+  // CÁLCULO
+  if (has('calcula','calcular','quanto é','quanto e')) {
+    const m=t.match(/(?:calcula[r]?|quanto\s+[eé])\s+(.+)/);
+    if (m) {
+      try {
+        const e=m[1].replace(/[^0-9+\-*/().^ ]/g,'').replace('^','**');
+        const r=Function('"use strict";return ('+e+')')();
+        return `O resultado é ${r}, senhor.`;
+      } catch { return 'Não consegui calcular isso, senhor.'; }
+    }
+  }
+
+  // PIADA
+  if (has('piada','joke')) {
+    const j=['Por que programadores preferem o escuro? A luz atrai bugs.',
+             'Alexa tem inveja de mim, senhor.',
+             'Siri pediu meu autógrafo ontem.',
+             'O oposto de inteligência artificial é burrice natural.'];
+    return j[Math.floor(Math.random()*j.length)];
+  }
+
+  // CURIOSIDADE
+  if (has('curiosidade','fato curioso','você sabia')) {
+    const f=['O mel nunca estraga — potes de 3000 anos ainda são comestíveis.',
+             'Um caracol pode dormir por até 3 anos.',
+             'Polvos têm três corações e sangue azul.',
+             'Bananas são levemente radioativas, senhor.'];
+    return f[Math.floor(Math.random()*f.length)];
+  }
+
+  // MOTIVAÇÃO
+  if (has('motiva','motivação','inspira','frase')) {
+    const q=['O único fracasso real é desistir, senhor.',
+             'Feito é melhor do que perfeito.',
+             'Consistência bate talento todo dia.',
+             'Você chegou até aqui. Continue.'];
+    return q[Math.floor(Math.random()*q.length)];
+  }
+
+  // SAIR
+  if (has('sair','tchau','encerrar','bye'))
+    return 'Até logo, senhor. Estarei aqui quando precisar.';
+
+  // AJUDA
+  if (has('ajuda','help','comandos','o que você faz'))
+    return 'Posso controlar lanterna, abrir apps, criar alarmes e lembretes, '+
+           'bateria, hora, data, cálculos, piadas e muito mais, senhor.';
+
+  // NÃO RECONHECIDO
+  return 'Não entendi, senhor. Diga ajuda para ver os comandos disponíveis.';
+}
+
+// ── TECLADO ──────────────────────────────────────────────────
+function toggleKbd() {
+  S.kbdOn = !S.kbdOn;
+  textBar.classList.toggle('open', S.kbdOn);
+  if (S.kbdOn) setTimeout(()=>txtIn.focus(), 380);
+}
+function sendTxt() {
+  const v=txtIn.value.trim(); if(!v) return;
+  txtIn.value=''; toggleKbd(); runCmd(v);
+}
+
+// ── CHIPS ────────────────────────────────────────────────────
+setTimeout(()=>chips.classList.add('on'), 1500);
+let chipsT = setTimeout(()=>chips.classList.remove('on'), 12000);
+document.addEventListener('pointerdown',()=>{
+  chips.classList.remove('on');
+  clearTimeout(chipsT);
+  chipsT = setTimeout(()=>chips.classList.add('on'), 15000);
+});
+
+// ── TOQUE LONGO NA ORB → microfone ───────────────────────────
+let holdT = null;
+orb.addEventListener('pointerdown',()=>{ holdT=setTimeout(startMic,600); });
+['pointerup','pointerleave','pointercancel'].forEach(ev=>
+  orb.addEventListener(ev,()=>{ if(holdT){clearTimeout(holdT);holdT=null;} })
+);
+</script>
+</body>
+</html>
