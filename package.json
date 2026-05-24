@@ -1,0 +1,19 @@
+{
+  "name": "todiy",
+  "version": "1.0.0",
+  "description": "TODIY - Assistente Pessoal Android",
+  "scripts": {
+    "sync": "npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/core":                "5.7.0",
+    "@capacitor/android":             "5.7.0",
+    "@capacitor/app":                 "5.0.6",
+    "@capacitor/haptics":             "5.0.6",
+    "@capacitor/local-notifications": "5.0.6",
+    "@capacitor/splash-screen":       "5.0.6"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "5.7.0"
+  }
+}

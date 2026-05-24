@@ -1,0 +1,23 @@
+{
+  "appId":    "com.todiy.app",
+  "appName":  "TODIY",
+  "webDir":   "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor":    "#050a12",
+      "showSpinner":        false
+    },
+    "LocalNotifications": {
+      "smallIcon":  "ic_stat_icon_config_sample",
+      "iconColor":  "#4fc3f7",
+      "sound":      "default"
+    }
+  }
+}
