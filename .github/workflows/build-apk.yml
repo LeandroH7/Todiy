@@ -19,6 +19,15 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Garantir que www/index.html existe
+        run: |
+          mkdir -p www
+          if [ ! -f www/index.html ]; then
+            echo "ERRO: www/index.html não encontrado!"
+            exit 1
+          fi
+          echo "www/index.html encontrado ($(wc -c < www/index.html) bytes)"
+
       - name: Instalar dependências
         run: npm install --legacy-peer-deps
 
@@ -42,6 +51,18 @@ jobs:
 
       - name: Sincronizar Capacitor
         run: npx cap sync android
+
+      - name: Adicionar permissões ao AndroidManifest.xml
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+
+          # Permissão de câmera (lanterna)
+          if ! grep -q "android.permission.CAMERA" "$MANIFEST"; then
+            sed -i 's|<uses-permission android:name="android.permission.INTERNET"/>|<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.FLASHLIGHT"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <uses-permission android:name="android.permission.RECORD_AUDIO"/>\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.VIBRATE"/>\n    <uses-feature android:name="android.hardware.camera.flash" android:required="false"/>|' "$MANIFEST"
+            echo "Permissões adicionadas ao AndroidManifest.xml"
+          else
+            echo "Permissões já existem"
+          fi
 
       - name: Permissão Gradle
         run: chmod +x android/gradlew
