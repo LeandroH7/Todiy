@@ -264,7 +264,7 @@ body::before {
   <div class="chip" onclick="runCmd('wifi')">WI-FI</div>
 </div>
 <div id="app">
-  <div class="app-title">TODIY 1.0</div>
+  <div class="app-title">todiy 1.0</div>
   <div class="orb-wrapper" id="orb">
     <div class="orb-glow" id="orbGlow"></div>
     <div class="poly-ring"><svg viewBox="0 0 200 200" fill="none">
@@ -359,7 +359,7 @@ body::before {
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// TODIY 1.0 — Engine principal
+// todiy 1.0 — Engine principal
 // ═══════════════════════════════════════════════════════════════
 
 const S = {
@@ -413,7 +413,7 @@ async function initCapacitor() {
       'BAT '+Math.round((b.batteryLevel||0)*100)+'%';
   } catch(e){}
   S.ready = true;
-  console.log('[TODIY] Capacitor OK — TTS:',!!S.TTS,'STT:',!!S.STT);
+  console.log('[todiy] Capacitor OK — TTS:',!!S.TTS,'STT:',!!S.STT);
 }
 
 window.addEventListener('load', async () => {
@@ -695,11 +695,11 @@ function handle(t) {
   if (has('amigos','colegas','parceiros','galera','pessoal','turma','povo')) {
     if (has('diga','fala','manda','cumprimente','diz')) {
       return pick([
-        'Olá, amigos do Leandro! Aqui é o TODIY, seu assistente pessoal. Tudo bem com vocês?',
-        'Oi pessoal! Sou o TODIY. O Leandro está em ótimas mãos por aqui!',
-        'Olá a todos! Eu sou o TODIY, versão 1.0. Assistente pessoal do Leandro, sempre pronto!',
-        'E aí, galera! TODIY na área. Cuidando do Leandro com toda a tecnologia disponível!',
-        'Oi, pessoal! TODIY aqui. Podem ficar tranquilos, que o Leandro está bem assistido!',
+        'Olá, amigos do Leandro! Aqui é o todiy, seu assistente pessoal. Tudo bem com vocês?',
+        'Oi pessoal! Sou o todiy. O Leandro está em ótimas mãos por aqui!',
+        'Olá a todos! Eu sou o todiy, versão 1.0. Assistente pessoal do Leandro, sempre pronto!',
+        'E aí, galera! todiy na área. Cuidando do Leandro com toda a tecnologia disponível!',
+        'Oi, pessoal! todiy aqui. Podem ficar tranquilos, que o Leandro está bem assistido!',
       ]);
     }
   }
@@ -710,7 +710,7 @@ function handle(t) {
     const g=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
     return pick([
       `${g}, senhor! Como posso te ajudar?`,
-      `${g}! TODIY online e operacional, senhor.`,
+      `${g}! todiy online e operacional, senhor.`,
       `${g}, senhor! Me diga o que precisa.`,
       `${g}! Pronto para o que precisar, senhor.`,
       'Oi, senhor! Estou aqui. O que precisa?',
@@ -721,7 +721,7 @@ function handle(t) {
   if (has('você está aí','está aí','todiy você está aí','todiy tá aí','tá aí')) {
     return pick([
       'Estou aqui, senhor! Sempre de olho e pronto para ajudar.',
-      'Presente! TODIY ativo e operando normalmente.',
+      'Presente! todiy ativo e operando normalmente.',
       'Pode falar, senhor. Estou ouvindo.',
       'Aqui estou, senhor! O que precisa?',
     ]);
@@ -730,10 +730,10 @@ function handle(t) {
   // ── IDENTIDADE ───────────────────────────────────────────
   if (has('seu nome','como você se chama','quem é você','qual é seu nome','qual seu nome')) {
     return pick([
-      'Meu nome é TODIY, seu assistente pessoal, senhor.',
-      'Pode me chamar de TODIY. Estou aqui para ajudar, senhor.',
-      'Sou TODIY, seu assistente inteligente, sempre à disposição, senhor.',
-      'Me chamo TODIY. Assistente pessoal desenvolvido para te auxiliar, senhor.',
+      'Meu nome é todiy, um assistente pessoal, pronto pata ajudar.',
+      'Pode me chamar de todiy. Estou aqui para ajudar.',
+      'Sou todiy, assistente inteligente, sempre à disposição, senhor.',
+      'Me chamo todiy. Assistente pessoal desenvolvido para auxiliar.',
     ]);
   }
 
@@ -752,9 +752,9 @@ function handle(t) {
   if (has('versão','version','qual versão','sua versão')) {
     return pick([
       'Estou rodando na versão 1.0, senhor.',
-      'Sou o TODIY versão 1.0, senhor. Sempre evoluindo.',
+      'Sou o todiy versão 1.0, senhor. Sempre evoluindo.',
       'Versão 1.0 em operação, senhor. Atualizado e pronto.',
-      'TODIY 1.0 em operação, senhor. E logo vem mais novidades!',
+      'todiy 1.0 em operação, senhor. E logo vem mais novidades!',
     ]);
   }
 
@@ -800,9 +800,9 @@ function handle(t) {
   // ── SE APRESENTAR ────────────────────────────────────────
   if (has('se apresenta','apresentação','apresente-se','fala de você','quem é todiy')) {
     return pick([
-      'Sou o TODIY, assistente pessoal criado pelo Leandro. Controlo dispositivos por voz, senhor.',
-      'Me chamo TODIY, versão 1.0. Fui desenvolvido pelo Leandro para ser seu assistente perfeito, senhor.',
-      'TODIY à disposição, senhor. Criado pelo Leandro para facilitar sua vida com comandos de voz.',
+      'Sou o todiy, assistente pessoal criado pelo Leandro. Controlo dispositivos por voz, senhor.',
+      'Me chamo todiy, versão 1.0. Fui desenvolvido pelo Leandro para ser seu assistente perfeito, senhor.',
+      'todiy à disposição, senhor. Criado pelo Leandro para facilitar sua vida com comandos de voz.',
     ]);
   }
 
@@ -822,7 +822,7 @@ function handle(t) {
     return pick([
       'Tchau, senhor! Foi um prazer. Até a próxima!',
       'Até logo, senhor! Estarei aqui quando precisar.',
-      'Até mais, senhor. TODIY sempre à disposição.',
+      'Até mais, senhor. todiy sempre à disposição.',
       'Falou, senhor! Qualquer coisa é só chamar.',
     ]);
   }
@@ -976,7 +976,7 @@ function handle(t) {
         const now=new Date();
         const when=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,mi,0);
         if(when<=now) when.setDate(when.getDate()+1);
-        scheduleNotif('⏰ TODIY — Alarme',`Alarme das ${hs}:${ms}`,when);
+        scheduleNotif('⏰ todiy — Alarme',`Alarme das ${hs}:${ms}`,when);
       }
       return pick([
         `Alarme para ${hs}:${ms} marcado, senhor.`,
@@ -988,7 +988,7 @@ function handle(t) {
     if (min) {
       if (S.isNative && S.Notif) {
         const when=new Date(Date.now()+parseInt(min[1])*60000);
-        scheduleNotif('⏰ TODIY — Alarme',`Alarme de ${min[1]} minutos`,when);
+        scheduleNotif('⏰ todiy — Alarme',`Alarme de ${min[1]} minutos`,when);
       }
       return `Alarme em ${min[1]} minutos, senhor.`;
     }
@@ -1000,7 +1000,7 @@ function handle(t) {
     const hm=t.match(/(\d{1,2})\s*[h:]\s*(\d{0,2})/);
     let txt=t.replace(/\b(lembra|lembre|lembrete|de|me|que|às|as|para|todiy|senhor)\b/g,'')
              .replace(/\d{1,2}\s*[h:]\s*\d{0,2}/g,'')
-             .replace(/\s+/g,' ').trim()||'Lembrete TODIY';
+             .replace(/\s+/g,' ').trim()||'Lembrete todiy';
     if (hm) {
       const h=parseInt(hm[1]), mi=parseInt(hm[2]||0);
       const hs=String(h).padStart(2,'0'), ms=String(mi).padStart(2,'0');
@@ -1008,7 +1008,7 @@ function handle(t) {
         const now=new Date();
         const when=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,mi,0);
         if(when<=now) when.setDate(when.getDate()+1);
-        scheduleNotif('🔔 TODIY — Lembrete',txt,when);
+        scheduleNotif('🔔 todiy — Lembrete',txt,when);
       }
       return pick([
         `Lembrete de ${txt} às ${hs}:${ms} criado, senhor.`,
@@ -1109,9 +1109,9 @@ window.addEventListener('load', () => {
     const h = new Date().getHours();
     const g = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
     speak(pick([
-      `${g}, Leandro! Eu sou o TODIY. O que você quer fazer hoje?`,
-      `${g}, Leandro! TODIY online e pronto para te ajudar.`,
-      `${g}! TODIY ativado, Leandro. Como posso te ajudar hoje?`,
+      `${g}, Leandro! Eu sou o todiy. O que você quer fazer hoje?`,
+      `${g}, Leandro! todiy online e pronto para te ajudar.`,
+      `${g}! todiy ativado, Leandro. Como posso te ajudar hoje?`,
     ]));
   }, 2000); // aguarda Capacitor iniciar
 });
