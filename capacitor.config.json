@@ -15,9 +15,8 @@
       "showSpinner":        false
     },
     "LocalNotifications": {
-      "smallIcon":  "ic_stat_icon_config_sample",
-      "iconColor":  "#4fc3f7",
-      "sound":      "default"
+      "iconColor": "#4fc3f7",
+      "sound":     "default"
     }
   }
 }
