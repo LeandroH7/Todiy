@@ -365,7 +365,6 @@ body::before {
 const S = {
   status:'idle', micOn:false, kbdOn:false, torch:false,
   TTS:null, STT:null, Notif:null, Haptics:null, App:null, Device:null,
-  Flash:null,
   isNative:false, ready:false,
 };
 
@@ -407,9 +406,6 @@ async function initCapacitor() {
   S.Haptics = P.Haptics            || null;
   S.App     = P.App                || null;
   S.Device  = P.Device             || null;
-  // @capgo/capacitor-flash — lanterna confiável
-  S.Flash   = P.CapacitorFlash     || P.Flash || null;
-
   try { await P.SplashScreen?.hide(); } catch(e){}
 
   // Pede permissões logo no início
@@ -424,7 +420,6 @@ async function initCapacitor() {
   } catch(e){}
 
   S.ready = true;
-  console.log('[TODIY] Capacitor OK — TTS:',!!S.TTS,'STT:',!!S.STT,'Flash:',!!S.Flash);
 }
 
 window.addEventListener('load', async () => {
@@ -609,38 +604,34 @@ async function scheduleNotif(title, body, when) {
   }
 }
 
-// ── LANTERNA (@capgo/capacitor-flash) ────────────────────────
-// Plugin mais confiável que @capacitor/torch para Capacitor 5
+// ── LANTERNA ─────────────────────────────────────────────────
+// Usa Capacitor.Plugins direto — sem plugin externo
+// Compatível com qualquer plugin de torch registrado no APK
 async function torchOn() {
-  if (!S.isNative) return;
+  if (!S.isNative) { console.log('[TORCH] sem nativo'); return; }
+  // Tenta qualquer plugin de flash/torch disponível no runtime
+  const T = Capacitor.Plugins.Torch
+         || Capacitor.Plugins.CapacitorFlash
+         || Capacitor.Plugins.Flash
+         || null;
   try {
-    // @capgo/capacitor-flash
-    if (S.Flash) {
-      await S.Flash.switchOn({ intensity: 1.0 });
-      S.torch = true;
-      return;
-    }
-    // Fallback: plugin antigo se existir
-    if (Capacitor.Plugins.Torch) {
-      await Capacitor.Plugins.Torch.enable();
-      S.torch = true;
-    }
-  } catch(e) { console.warn('torch on:', e); }
+    if (T && T.enable)   { await T.enable();            S.torch=true; return; }
+    if (T && T.switchOn) { await T.switchOn({intensity:1}); S.torch=true; return; }
+    // Fallback: abre configurações de lanterna via intent
+    if (S.App) await S.App.openUrl({url:'intent:#Intent;action=android.media.action.STILL_IMAGE_CAMERA;end'}).catch(()=>{});
+  } catch(e) { console.warn('[TORCH ON]', e); }
 }
 
 async function torchOff() {
   if (!S.isNative) return;
+  const T = Capacitor.Plugins.Torch
+         || Capacitor.Plugins.CapacitorFlash
+         || Capacitor.Plugins.Flash
+         || null;
   try {
-    if (S.Flash) {
-      await S.Flash.switchOff();
-      S.torch = false;
-      return;
-    }
-    if (Capacitor.Plugins.Torch) {
-      await Capacitor.Plugins.Torch.disable();
-      S.torch = false;
-    }
-  } catch(e) { console.warn('torch off:', e); }
+    if (T && T.disable)   { await T.disable();   S.torch=false; return; }
+    if (T && T.switchOff) { await T.switchOff(); S.torch=false; return; }
+  } catch(e) { console.warn('[TORCH OFF]', e); }
 }
 asyncasync function torchBlink(times) {
   for (let i = 0; i < times; i++) {
