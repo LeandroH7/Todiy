@@ -690,6 +690,20 @@ function handle(t) {
   const rx   = p => new RegExp(p,'i').test(t);
   const num  = () => { const m=t.match(/(\d+)/); return m?parseInt(m[1]):null; };
 
+  // ── CUMPRIMENTAR AMIGOS (ANTES da saudação comum!) ───────
+  // Checado primeiro pois a frase contém palavras como "oi" e "olá"
+  if (has('amigos','colegas','parceiros','galera','pessoal','turma','povo')) {
+    if (has('diga','fala','manda','cumprimente','diz')) {
+      return pick([
+        'Olá, amigos do Leandro! Aqui é o TODIY, seu assistente pessoal. Tudo bem com vocês?',
+        'Oi pessoal! Sou o TODIY. O Leandro está em ótimas mãos por aqui!',
+        'Olá a todos! Eu sou o TODIY, versão 1.0. Assistente pessoal do Leandro, sempre pronto!',
+        'E aí, galera! TODIY na área. Cuidando do Leandro com toda a tecnologia disponível!',
+        'Oi, pessoal! TODIY aqui. Podem ficar tranquilos, que o Leandro está bem assistido!',
+      ]);
+    }
+  }
+
   // ── SAUDAÇÃO ─────────────────────────────────────────────
   if (has('oi','olá','ola','hey','bom dia','boa tarde','tudo bem','eai','e aí','salve','opa')) {
     const h=new Date().getHours();
@@ -780,19 +794,6 @@ function handle(t) {
       'Posso ligar lanterna, abrir apps, criar alarmes, lembretes, ver bateria, hora, data, cálculos, piadas e muito mais, senhor.',
       'Minhas funções incluem: lanterna, apps, alarmes, lembretes, bateria, hora, data e entretenimento, senhor.',
       'Controlo seu dispositivo por voz. Experimente: liga lanterna, abre WhatsApp, ou cria um alarme para as 7h.',
-    ]);
-  }
-
-  // ── CUMPRIMENTAR AMIGOS ───────────────────────────────────
-  if ((has('diga oi','fala oi','manda oi','diga olá','fala olá','cumprimente','olá para') ||
-       has('oi para','saluda')) &&
-      has('amigos','colegas','parceiros','parceiro','galera','pessoal','turma','povo')) {
-    return pick([
-      'Olá, amigos do Leandro! Aqui é o TODIY, seu assistente pessoal. Tudo bem com vocês?',
-      'Oi pessoal! Sou o TODIY. O Leandro está em ótimas mãos por aqui!',
-      'Olá a todos! Eu sou o TODIY, versão 1.0. Assistente pessoal do Leandro, sempre pronto!',
-      'E aí, galera! TODIY na área. Cuidando do Leandro com toda a tecnologia disponível!',
-      'Oi, pessoal! TODIY aqui. Podem ficar tranquilos, que o Leandro está bem assistido!',
     ]);
   }
 
