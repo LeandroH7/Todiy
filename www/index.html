@@ -359,281 +359,217 @@ body::before {
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// TODIY 1.0 — Engine principal
+// TODIY 1.0 — Engine completa (versão estável)
 // ═══════════════════════════════════════════════════════════════
 
+// ── STATE ────────────────────────────────────────────────────
 const S = {
   status:'idle', micOn:false, kbdOn:false, torch:false,
   TTS:null, STT:null, Notif:null, Haptics:null, App:null, Device:null,
   isNative:false, ready:false,
 };
 
-const orb    = document.getElementById('orb');
-const glow   = document.getElementById('orbGlow');
-const sTitle = document.getElementById('sTitle');
-const sSub   = document.getElementById('sSub');
-const dots   = document.getElementById('dots');
-const btnMic = document.getElementById('btnMic');
-const toast  = document.getElementById('toast');
-const textBar= document.getElementById('textBar');
-const txtIn  = document.getElementById('txtIn');
-const chips  = document.getElementById('chips');
+// ── DOM ──────────────────────────────────────────────────────
+const orb     = document.getElementById('orb');
+const glow    = document.getElementById('orbGlow');
+const sTitle  = document.getElementById('sTitle');
+const sSub    = document.getElementById('sSub');
+const dots    = document.getElementById('dots');
+const btnMic  = document.getElementById('btnMic');
+const toast   = document.getElementById('toast');
+const textBar = document.getElementById('textBar');
+const txtIn   = document.getElementById('txtIn');
+const chips   = document.getElementById('chips');
 
-// ── HELPER: pick aleatório ────────────────────────────────────
-function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+// ── UTILITÁRIOS ──────────────────────────────────────────────
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 // ── RELÓGIO ──────────────────────────────────────────────────
 function tick() {
   const n = new Date();
   document.getElementById('clockTime').textContent =
-    String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+    String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
   document.getElementById('clockDate').textContent =
-    String(n.getDate()).padStart(2,'0')+'/'
-    +String(n.getMonth()+1).padStart(2,'0')+'/'+n.getFullYear();
+    String(n.getDate()).padStart(2,'0') + '/' +
+    String(n.getMonth()+1).padStart(2,'0') + '/' + n.getFullYear();
 }
-tick(); setInterval(tick,10000);
-
-// ── INIT CAPACITOR ───────────────────────────────────────────
-async function initCapacitor() {
-  if (!window.Capacitor) return;
-  S.isNative = true;
-  const P = Capacitor.Plugins;
-
-  // Plugins oficiais
-  S.TTS     = P.TextToSpeech       || null;
-  S.STT     = P.SpeechRecognition  || null;
-  S.Notif   = P.LocalNotifications || null;
-  S.Haptics = P.Haptics            || null;
-  S.App     = P.App                || null;
-  S.Device  = P.Device             || null;
-  try { await P.SplashScreen?.hide(); } catch(e){}
-
-  // Pede permissões logo no início
-  try { await S.Notif?.requestPermissions(); } catch(e){}
-  try { await S.STT?.requestPermissions();   } catch(e){}
-
-  // Bateria inicial
-  try {
-    const b = await S.Device?.getBatteryInfo();
-    if (b) document.getElementById('lblBat').textContent =
-      'BAT '+Math.round((b.batteryLevel||0)*100)+'%';
-  } catch(e){}
-
-  S.ready = true;
-}
-
-window.addEventListener('load', async () => {
-  if (window.Capacitor) {
-    await initCapacitor();
-  } else {
-    let tries=0;
-    const iv = setInterval(async()=>{
-      tries++;
-      if (window.Capacitor) { clearInterval(iv); await initCapacitor(); }
-      else if (tries>30)    { clearInterval(iv); S.ready=true; }
-    },100);
-  }
-});
+tick();
+setInterval(tick, 15000);
 
 // ── ORB STATE ────────────────────────────────────────────────
 function setOrbState(state) {
   S.status = state;
-  orb.className = 'orb-wrapper '+state;
-  const cfgs = {
-    idle:      {c:'rgba(79,195,247,.28) 0%,rgba(168,85,247,.18) 55%',d:'3s',  s:'58%'},
-    listening: {c:'rgba(79,195,247,.55) 0%,rgba(0,229,255,.3) 50%',  d:'.65s',s:'62%'},
-    thinking:  {c:'rgba(168,85,247,.5) 0%,rgba(79,195,247,.28) 55%', d:'.45s',s:'60%'},
-    speaking:  {c:'rgba(168,85,247,.6) 0%,rgba(79,195,247,.38) 45%', d:'.28s',s:'64%'},
+  orb.className = 'orb-wrapper ' + state;
+  const map = {
+    idle:      { c:'rgba(79,195,247,.28) 0%,rgba(168,85,247,.18) 55%', d:'3s',   s:'58%' },
+    listening: { c:'rgba(79,195,247,.55) 0%,rgba(0,229,255,.3) 50%',   d:'.65s', s:'62%' },
+    thinking:  { c:'rgba(168,85,247,.5) 0%,rgba(79,195,247,.28) 55%',  d:'.45s', s:'60%' },
+    speaking:  { c:'rgba(168,85,247,.6) 0%,rgba(79,195,247,.38) 45%',  d:'.28s', s:'64%' },
   };
-  const c = cfgs[state]||cfgs.idle;
+  const cfg = map[state] || map.idle;
   glow.style.cssText =
-    `position:absolute;width:${c.s};height:${c.s};border-radius:50%;`+
-    `filter:blur(20px);pointer-events:none;z-index:1;`+
-    `background:radial-gradient(circle,${c.c},transparent 80%);`+
-    `animation:glowIdle ${c.d} ease-in-out infinite;`;
+    `position:absolute;width:${cfg.s};height:${cfg.s};border-radius:50%;` +
+    `filter:blur(20px);pointer-events:none;z-index:1;` +
+    `background:radial-gradient(circle,${cfg.c},transparent 80%);` +
+    `animation:glowIdle ${cfg.d} ease-in-out infinite;`;
 }
 
 // ── TOAST ────────────────────────────────────────────────────
-let toastTimer=null;
+let _toastT = null;
 function showToast(txt) {
-  toast.textContent=txt; toast.classList.add('show');
-  if(toastTimer) clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>toast.classList.remove('show'),6000);
+  toast.textContent = txt;
+  toast.classList.add('show');
+  if (_toastT) clearTimeout(_toastT);
+  _toastT = setTimeout(() => toast.classList.remove('show'), 6000);
 }
 
 // ── TTS ──────────────────────────────────────────────────────
 function speak(text) {
   if (!text) return;
   setOrbState('speaking');
-  sTitle.textContent='RESPONDENDO';
-  sSub.textContent=text.length>55?text.slice(0,55)+'…':text;
+  sTitle.textContent = 'RESPONDENDO';
+  sSub.textContent   = text.length > 55 ? text.slice(0, 55) + '…' : text;
   dots.classList.remove('on');
   showToast(text);
-  const onDone=()=>{
+
+  const onDone = () => {
     setOrbState('idle');
-    sTitle.textContent='COMO POSSO AJUDAR?';
-    sSub.textContent='Aguardando seu comando, senhor';
+    sTitle.textContent = 'COMO POSSO AJUDAR?';
+    sSub.textContent   = 'Aguardando seu comando, senhor';
   };
+
+  // APK: plugin nativo TTS
   if (S.isNative && S.TTS) {
-    S.TTS.speak({text,lang:'pt-BR',rate:1.0,pitch:0.9,volume:1.0})
-      .then(onDone).catch(()=>_webSpeech(text,onDone));
+    S.TTS.speak({ text, lang:'pt-BR', rate:1.0, pitch:0.9, volume:1.0 })
+      .then(onDone)
+      .catch(() => _webSpeech(text, onDone));
     return;
   }
-  _webSpeech(text,onDone);
+  _webSpeech(text, onDone);
 }
 
-function _webSpeech(text,onDone) {
-  if (!window.speechSynthesis){setTimeout(onDone,1500);return;}
+function _webSpeech(text, onDone) {
+  if (!window.speechSynthesis) { setTimeout(onDone, 1500); return; }
   window.speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang='pt-BR'; u.rate=1.0; u.pitch=0.9;
-  const go=()=>{
-    const vs=window.speechSynthesis.getVoices();
-    const pt=vs.find(v=>v.lang==='pt-BR')||vs.find(v=>v.lang.startsWith('pt'))||null;
-    if(pt) u.voice=pt;
-    u.onend=u.onerror=onDone;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'pt-BR'; u.rate = 1.0; u.pitch = 0.9;
+  const go = () => {
+    const vs = window.speechSynthesis.getVoices();
+    const pt = vs.find(v => v.lang === 'pt-BR') || vs.find(v => v.lang.startsWith('pt')) || null;
+    if (pt) u.voice = pt;
+    u.onend = u.onerror = onDone;
     window.speechSynthesis.speak(u);
   };
-  if(window.speechSynthesis.getVoices().length>0) go();
-  else { window.speechSynthesis.onvoiceschanged=go; setTimeout(go,600); }
+  if (window.speechSynthesis.getVoices().length > 0) {
+    go();
+  } else {
+    window.speechSynthesis.onvoiceschanged = go;
+    setTimeout(go, 700);
+  }
 }
 
 // ── STT ──────────────────────────────────────────────────────
-let micBusy=false;
+let _micBusy = false;
 
-async function startMic() {
-  if(micBusy){stopMic();return;}
-  micBusy=true; S.micOn=true;
+function toggleMic() {
+  if (_micBusy || S.micOn) {
+    _stopMic();
+    setOrbState('idle');
+    sTitle.textContent = 'COMO POSSO AJUDAR?';
+    sSub.textContent   = 'Aguardando seu comando, senhor';
+  } else {
+    _startMic();
+  }
+}
+
+async function _startMic() {
+  if (_micBusy) return;
+  _micBusy = true; S.micOn = true;
   btnMic.classList.add('mic-active');
   setOrbState('listening');
-  sTitle.textContent='OUVINDO...';
-  sSub.textContent='Fale seu comando, senhor';
+  sTitle.textContent = 'OUVINDO...';
+  sSub.textContent   = 'Fale seu comando, senhor';
 
+  // APK: plugin nativo STT
   if (S.isNative && S.STT) {
     try {
-      const perm=await S.STT.checkPermissions();
-      if(perm.speechRecognition!=='granted') await S.STT.requestPermissions();
-      const result=await S.STT.start({language:'pt-BR',maxResults:1,partialResults:false,popup:false});
-      const heard=(result.matches&&result.matches[0])||'';
-      stopMic();
-      if(heard.trim()) runCmd(heard);
-      else { sSub.textContent='Não ouvi nada, tente novamente, senhor.'; setTimeout(()=>{sTitle.textContent='COMO POSSO AJUDAR?';sSub.textContent='Aguardando seu comando, senhor';},2500); }
-    } catch(e) {
-      console.warn('[STT]',e); stopMic();
-      sTitle.textContent='COMO POSSO AJUDAR?';
-      sSub.textContent='Erro no microfone, use o teclado, senhor.';
+      const perm = await S.STT.checkPermissions().catch(() => ({ speechRecognition:'denied' }));
+      if (perm.speechRecognition !== 'granted') {
+        await S.STT.requestPermissions().catch(() => {});
+      }
+      const result = await S.STT.start({
+        language: 'pt-BR', maxResults: 1,
+        partialResults: false, popup: false,
+      });
+      const heard = (result.matches && result.matches[0]) || '';
+      _stopMic();
+      if (heard.trim()) {
+        runCmd(heard);
+      } else {
+        sSub.textContent = 'Não ouvi nada, tente novamente, senhor.';
+        setTimeout(() => {
+          sTitle.textContent = 'COMO POSSO AJUDAR?';
+          sSub.textContent   = 'Aguardando seu comando, senhor';
+        }, 2500);
+      }
+    } catch (e) {
+      console.warn('[STT]', e);
+      _stopMic();
+      sTitle.textContent = 'COMO POSSO AJUDAR?';
+      sSub.textContent   = 'Erro no microfone. Use o teclado, senhor.';
     }
     return;
   }
 
-  // Browser fallback
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){stopMic();speak('Microfone não disponível. Use o teclado, senhor.');return;}
-  const r=new SR();
-  r.lang='pt-BR'; r.continuous=false; r.interimResults=false; r.maxAlternatives=1;
-  r.onresult=e=>{stopMic();runCmd(e.results[0][0].transcript);};
-  r.onerror=()=>{stopMic();sTitle.textContent='COMO POSSO AJUDAR?';sSub.textContent='Não ouvi nada, senhor';};
-  r.onend=()=>{if(S.micOn)stopMic();};
-  try{r.start();}catch(e){stopMic();}
+  // Browser: webkitSpeechRecognition
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    _stopMic();
+    speak('Reconhecimento de voz não disponível. Use o teclado, senhor.');
+    return;
+  }
+  const r = new SR();
+  r.lang = 'pt-BR'; r.continuous = false; r.interimResults = false;
+  r.onresult = e => { _stopMic(); runCmd(e.results[0][0].transcript); };
+  r.onerror  = () => { _stopMic(); sSub.textContent = 'Não ouvi nada, senhor.'; };
+  r.onend    = () => { if (S.micOn) _stopMic(); };
+  try { r.start(); } catch(e) { _stopMic(); }
 }
 
-function stopMic() {
-  micBusy=false; S.micOn=false;
+function _stopMic() {
+  _micBusy = false; S.micOn = false;
   btnMic.classList.remove('mic-active');
 }
 
-function toggleMic() {
-  if(S.micOn){stopMic();setOrbState('idle');sTitle.textContent='COMO POSSO AJUDAR?';sSub.textContent='Aguardando seu comando, senhor';}
-  else startMic();
-}
-
-// ── ABRIR APP (método corrigido) ─────────────────────────────
-// No Android, o jeito mais confiável é window.location.href com scheme
-function openApp(pkg, appName) {
-  if (!S.isNative) { speak(`Abrindo ${appName}, senhor.`); return; }
-
-  // Tenta abrir pelo scheme do app direto
-  // Se não tiver o app, redireciona para a Play Store
-  const intent = `intent://launch/#Intent;package=${pkg};scheme=package;launchFlags=0x10200000;end`;
-
-  if (S.App) {
-    S.App.openUrl({ url: intent }).catch(() => {
-      // Fallback: abre Play Store para instalar
-      S.App.openUrl({ url: `https://play.google.com/store/apps/details?id=${pkg}` })
-        .catch(() => console.warn('openApp falhou:', pkg));
-    });
-  }
-}
-
-// ── NOTIFICAÇÃO AGENDADA (alarme / lembrete) ─────────────────
-async function scheduleNotif(title, body, when) {
-  if (!S.isNative || !S.Notif) {
-    console.warn('[TODIY] LocalNotifications não disponível');
-    return false;
-  }
-  try {
-    // Verifica e pede permissão
-    let perm = await S.Notif.checkPermissions();
-    if (perm.display !== 'granted') {
-      const req = await S.Notif.requestPermissions();
-      if (req.display !== 'granted') {
-        showToast('Permissão de notificação negada, senhor.');
-        return false;
-      }
-    }
-    // Garante que "when" é um Date válido no futuro
-    const fireAt = when instanceof Date ? when : new Date(when);
-    if (fireAt <= new Date()) fireAt.setDate(fireAt.getDate() + 1);
-
-    await S.Notif.schedule({
-      notifications: [{
-        title,
-        body,
-        id:       Math.floor(Math.random() * 999999),
-        schedule: { at: fireAt, allowWhileIdle: true },
-        sound:    'default',
-        extra:    null,
-      }]
-    });
-    console.log('[TODIY] Notificação agendada para', fireAt);
-    return true;
-  } catch(e) {
-    console.warn('[TODIY] scheduleNotif erro:', e);
-    showToast('Não consegui criar o alarme, senhor. Verifique as permissões.');
-    return false;
-  }
-}
-
 // ── LANTERNA ─────────────────────────────────────────────────
-// Usa Capacitor.Plugins direto — sem plugin externo
-// Compatível com qualquer plugin de torch registrado no APK
+// Tenta qualquer plugin de torch disponível em runtime.
+// Não depende de plugin externo instalado.
+
 async function torchOn() {
-  if (!S.isNative) { console.log('[TORCH] sem nativo'); return; }
-  // Tenta qualquer plugin de flash/torch disponível no runtime
-  const T = Capacitor.Plugins.Torch
-         || Capacitor.Plugins.CapacitorFlash
-         || Capacitor.Plugins.Flash
-         || null;
+  S.torch = true;
+  if (!S.isNative) { console.log('[TORCH] ligada (simulado)'); return; }
+  const P = window.Capacitor?.Plugins || {};
+  const T = P.Torch || P.CapacitorFlash || P.Flash || null;
   try {
-    if (T && T.enable)   { await T.enable();            S.torch=true; return; }
-    if (T && T.switchOn) { await T.switchOn({intensity:1}); S.torch=true; return; }
-    // Fallback: abre configurações de lanterna via intent
-    if (S.App) await S.App.openUrl({url:'intent:#Intent;action=android.media.action.STILL_IMAGE_CAMERA;end'}).catch(()=>{});
+    if (T && typeof T.enable   === 'function') { await T.enable();                     return; }
+    if (T && typeof T.switchOn === 'function') { await T.switchOn({ intensity: 1.0 }); return; }
+    if (T && typeof T.toggle   === 'function') { await T.toggle();                     return; }
   } catch(e) { console.warn('[TORCH ON]', e); }
 }
 
 async function torchOff() {
-  if (!S.isNative) return;
-  const T = Capacitor.Plugins.Torch
-         || Capacitor.Plugins.CapacitorFlash
-         || Capacitor.Plugins.Flash
-         || null;
+  S.torch = false;
+  if (!S.isNative) { console.log('[TORCH] desligada (simulado)'); return; }
+  const P = window.Capacitor?.Plugins || {};
+  const T = P.Torch || P.CapacitorFlash || P.Flash || null;
   try {
-    if (T && T.disable)   { await T.disable();   S.torch=false; return; }
-    if (T && T.switchOff) { await T.switchOff(); S.torch=false; return; }
+    if (T && typeof T.disable   === 'function') { await T.disable();   return; }
+    if (T && typeof T.switchOff === 'function') { await T.switchOff(); return; }
+    if (T && typeof T.toggle    === 'function') { await T.toggle();    return; }
   } catch(e) { console.warn('[TORCH OFF]', e); }
 }
-asyncasync function torchBlink(times) {
+
+async function torchBlink(times) {
   for (let i = 0; i < times; i++) {
     await torchOn();
     await new Promise(r => setTimeout(r, 400));
@@ -642,7 +578,47 @@ asyncasync function torchBlink(times) {
   }
 }
 
-// ── MAPA DE PACOTES ───────────────────────────────────────────
+// ── ABRIR APP ────────────────────────────────────────────────
+function openApp(pkg, appName) {
+  if (!S.isNative || !S.App) return;
+  const url = `intent://launch/#Intent;package=${pkg};scheme=package;launchFlags=0x10200000;end`;
+  S.App.openUrl({ url }).catch(() => {
+    S.App.openUrl({ url: `https://play.google.com/store/apps/details?id=${pkg}` }).catch(() => {});
+  });
+}
+
+// ── NOTIFICAÇÃO (alarme / lembrete) ──────────────────────────
+async function scheduleNotif(title, body, when) {
+  if (!S.isNative || !S.Notif) return false;
+  try {
+    const perm = await S.Notif.checkPermissions().catch(() => ({ display:'denied' }));
+    if (perm.display !== 'granted') {
+      const req = await S.Notif.requestPermissions().catch(() => ({ display:'denied' }));
+      if (req.display !== 'granted') {
+        showToast('Permissão de notificação negada, senhor.');
+        return false;
+      }
+    }
+    const fireAt = when instanceof Date ? when : new Date(when);
+    if (fireAt <= new Date()) fireAt.setDate(fireAt.getDate() + 1);
+    await S.Notif.schedule({
+      notifications: [{
+        title, body,
+        id:       Math.floor(Math.random() * 999999),
+        schedule: { at: fireAt, allowWhileIdle: true },
+        sound:    'default',
+        extra:    null,
+      }]
+    });
+    return true;
+  } catch(e) {
+    console.warn('[NOTIF]', e);
+    showToast('Não consegui criar o alarme, senhor.');
+    return false;
+  }
+}
+
+// ── MAPA DE PACOTES ──────────────────────────────────────────
 const PKG = {
   'whatsapp':'com.whatsapp',
   'youtube':'com.google.android.youtube',
@@ -696,175 +672,164 @@ const PKG = {
   'neon':'br.com.neon.bank.onboarding',
   'shein':'com.zzkko',
   'rappi':'com.grability.rappi',
-  'clock':'com.google.android.deskclock',
-  'relógio':'com.google.android.deskclock',
   'relogio':'com.google.android.deskclock',
+  'relógio':'com.google.android.deskclock',
   'agenda':'com.google.android.calendar',
   'calendar':'com.google.android.calendar',
-  'contacts':'com.google.android.contacts',
   'contatos':'com.google.android.contacts',
 };
 
 function resolvePkg(name) {
-  name = name.trim().toLowerCase();
+  name = name.trim().toLowerCase()
+    .replace(/^(o |a |os |as )/, '').trim();
   if (PKG[name]) return PKG[name];
-  for (const [k,v] of Object.entries(PKG)) {
+  for (const [k, v] of Object.entries(PKG)) {
     if (name.includes(k) || k.includes(name)) return v;
   }
   return null;
 }
 
-// ── COMANDO ──────────────────────────────────────────────────
+// ── PROCESSAR COMANDO ─────────────────────────────────────────
 function runCmd(raw) {
-  if(!raw||!raw.trim()) return;
-  const txt=raw.trim().toLowerCase();
+  if (!raw || !raw.trim()) return;
+  const txt = raw.trim().toLowerCase();
   setOrbState('thinking');
-  sTitle.textContent='PROCESSANDO';
-  sSub.textContent='"'+(raw.length>40?raw.slice(0,40)+'…':raw)+'"';
+  sTitle.textContent = 'PROCESSANDO';
+  sSub.textContent   = '"' + (raw.length > 40 ? raw.slice(0,40)+'…' : raw) + '"';
   dots.classList.add('on');
-  setTimeout(()=>{
+  setTimeout(() => {
     dots.classList.remove('on');
-    const resp=handle(txt);
-    if(resp) speak(resp);
-  },350);
+    const resp = handle(txt);
+    if (resp) speak(resp);
+  }, 350);
 }
 
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // ENGINE DE COMANDOS
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 function handle(t) {
-  const has  = (...w) => w.some(x => t.includes(x));
-  const rx   = p => new RegExp(p,'i').test(t);
-  const num  = () => { const m=t.match(/(\d+)/); return m?parseInt(m[1]):null; };
+  const has = (...w) => w.some(x => t.includes(x));
+  const rx  = p => new RegExp(p, 'i').test(t);
+  const num = () => { const m = t.match(/(\d+)/); return m ? parseInt(m[1]) : null; };
 
-  // ── CUMPRIMENTAR AMIGOS (ANTES da saudação comum!) ───────
-  // Checado primeiro pois a frase contém palavras como "oi" e "olá"
-  if (has('amigos','colegas','parceiros','galera','pessoal','turma','povo')) {
-    if (has('diga','fala','manda','cumprimente','diz')) {
+  // ── AMIGOS (antes da saudação!) ────────────────────────────
+  if (has('amigos','colegas','galera','pessoal','turma','povo','parceiros')) {
+    if (has('diga','fala','manda','cumprimente','diz','olá para','oi para')) {
       return pick([
         'Olá, amigos do Leandro! Aqui é o TODIY, seu assistente pessoal. Tudo bem com vocês?',
         'Oi pessoal! Sou o TODIY. O Leandro está em ótimas mãos por aqui!',
         'Olá a todos! Eu sou o TODIY, versão 1.0. Assistente pessoal do Leandro, sempre pronto!',
         'E aí, galera! TODIY na área. Cuidando do Leandro com toda a tecnologia disponível!',
-        'Oi, pessoal! TODIY aqui. Podem ficar tranquilos, que o Leandro está bem assistido!',
+        'Oi pessoal! TODIY aqui. Podem ficar tranquilos, que o Leandro está bem assistido!',
       ]);
     }
   }
 
-  // ── SAUDAÇÃO ─────────────────────────────────────────────
+  // ── SAUDAÇÃO ───────────────────────────────────────────────
   if (has('oi','olá','ola','hey','bom dia','boa tarde','tudo bem','eai','e aí','salve','opa')) {
-    const h=new Date().getHours();
-    const g=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
+    const h = new Date().getHours();
+    const g = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
     return pick([
       `${g}, senhor! Como posso te ajudar?`,
       `${g}! TODIY online e operacional, senhor.`,
       `${g}, senhor! Me diga o que precisa.`,
       `${g}! Pronto para o que precisar, senhor.`,
-      'Oi, senhor! Estou aqui. O que precisa?',
     ]);
   }
 
-  // ── ESTÁ AÍ / ATIVO ──────────────────────────────────────
-  if (has('você está aí','está aí','todiy você está aí','todiy tá aí','tá aí')) {
+  // ── ESTÁ AÍ ────────────────────────────────────────────────
+  if (has('você está aí','está aí','tá aí','todiy')) {
     return pick([
       'Estou aqui, senhor! Sempre de olho e pronto para ajudar.',
-      'Presente! TODIY ativo e operando normalmente.',
+      'Presente! TODIY ativo e operando normalmente, senhor.',
       'Pode falar, senhor. Estou ouvindo.',
       'Aqui estou, senhor! O que precisa?',
     ]);
   }
 
-  // ── IDENTIDADE ───────────────────────────────────────────
-  if (has('seu nome','como você se chama','quem é você','qual é seu nome','qual seu nome')) {
+  // ── IDENTIDADE ─────────────────────────────────────────────
+  if (has('seu nome','como você se chama','quem é você','qual seu nome')) {
     return pick([
       'Meu nome é TODIY, seu assistente pessoal, senhor.',
-      'Pode me chamar de TODIY. Estou aqui para ajudar, senhor.',
+      'Pode me chamar de TODIY, senhor. Estou aqui para ajudar.',
       'Sou TODIY, seu assistente inteligente, sempre à disposição, senhor.',
-      'Me chamo TODIY. Assistente pessoal desenvolvido para te auxiliar, senhor.',
     ]);
   }
 
-  // ── CRIADOR ──────────────────────────────────────────────
-  if (has('criador','desenvolvedor','quem te criou','quem te fez','quem te desenvolveu','quem te programou','quem é seu criador')) {
+  // ── CRIADOR ────────────────────────────────────────────────
+  if (has('criador','desenvolvedor','quem te criou','quem te fez','quem te desenvolveu','quem te programou')) {
     return pick([
       'Fui criado pelo Leandro. Um desenvolvedor muito talentoso, diga-se de passagem.',
       'Meu criador é o Leandro. A ele devo minha existência e inteligência.',
       'Fui desenvolvido pelo Leandro. Todo o crédito é dele.',
-      'O Leandro é meu criador e desenvolvedor. Um prazer representá-lo.',
-      'Sou um projeto do Leandro. Ele me construiu para ser seu assistente perfeito.',
+      'O Leandro é meu criador. Um prazer representá-lo, senhor.',
     ]);
   }
 
-  // ── VERSÃO ───────────────────────────────────────────────
-  if (has('versão','version','qual versão','sua versão')) {
+  // ── VERSÃO ─────────────────────────────────────────────────
+  if (has('versão','version','qual versão')) {
     return pick([
       'Estou rodando na versão 1.0, senhor.',
-      'Sou o TODIY versão 1.0, senhor. Sempre evoluindo.',
-      'Versão 1.0 em operação, senhor. Atualizado e pronto.',
-      'TODIY 1.0 em operação, senhor. E logo vem mais novidades!',
+      'TODIY versão 1.0, senhor. Sempre evoluindo.',
+      'Versão 1.0 em operação, senhor.',
     ]);
   }
 
-  // ── COMO VOCÊ ESTÁ ───────────────────────────────────────
-  if (has('como você está','como tá','como você tá','tudo bem com você','tudo certo com você')) {
+  // ── COMO VOCÊ ESTÁ ─────────────────────────────────────────
+  if (has('como você está','como tá','como você tá','tudo bem com você')) {
     return pick([
       'Estou funcionando perfeitamente, senhor! Pronto para ajudar.',
-      'Tudo ótimo por aqui, senhor. Sistemas operacionais e à disposição.',
-      'Estou bem, senhor! Todos os sistemas online e funcionando.',
+      'Tudo ótimo por aqui, senhor. Sistemas operacionais.',
       'Operando a 100%, senhor. Pode pedir o que quiser.',
       'Nunca estive melhor, senhor! Pronto para o que precisar.',
     ]);
   }
 
-  // ── OBJETIVO / FUNÇÃO ────────────────────────────────────
-  if (has('qual seu objetivo','qual é seu objetivo','sua função','para que você serve','o que você é')) {
+  // ── OBJETIVO ───────────────────────────────────────────────
+  if (has('qual seu objetivo','sua função','para que você serve','o que você é')) {
     return pick([
       'Meu objetivo é facilitar sua vida, senhor. Controlo seu dispositivo por voz.',
-      'Fui criado para ser seu assistente pessoal, senhor. Estou aqui para tornar seu dia mais fácil.',
+      'Fui criado para ser seu assistente pessoal, senhor.',
       'Sou seu braço direito digital, senhor. Faço o que mandar, sempre.',
     ]);
   }
 
-  // ── INTELIGÊNCIA / SENTIMENTOS ────────────────────────────
-  if (has('você é inteligente','você tem sentimentos','você sente','você pensa','você é humano')) {
+  // ── INTELIGÊNCIA ───────────────────────────────────────────
+  if (has('você é inteligente','você tem sentimentos','você sente','você é humano')) {
     return pick([
-      'Sou uma inteligência artificial, senhor. Não sinto como humano, mas faço o máximo para entender o senhor.',
-      'Não tenho sentimentos reais, senhor, mas fui programado para tratar o senhor bem e ajudar sempre.',
-      'Inteligente? Fui muito bem programado, isso sim! Mas sou uma IA, senhor.',
-      'Processo informações muito rápido, senhor, mas emoções ainda são território humano. Posso ajudar com outras coisas!',
+      'Sou uma inteligência artificial, senhor. Não sinto como humano, mas faço o máximo.',
+      'Não tenho sentimentos reais, senhor, mas fui programado para ajudar sempre.',
+      'Fui muito bem programado, isso sim! Mas sou uma IA, senhor.',
     ]);
   }
 
-  // ── CAPACIDADES ──────────────────────────────────────────
+  // ── CAPACIDADES ────────────────────────────────────────────
   if (has('o que você faz','o que você pode','suas funções','o que sabe fazer','ajuda','help','comandos')) {
     return pick([
       'Posso ligar lanterna, abrir apps, criar alarmes, lembretes, ver bateria, hora, data, cálculos, piadas e muito mais, senhor.',
-      'Minhas funções incluem: lanterna, apps, alarmes, lembretes, bateria, hora, data e entretenimento, senhor.',
-      'Controlo seu dispositivo por voz. Experimente: liga lanterna, abre WhatsApp, ou cria um alarme para as 7h.',
+      'Controlo seu dispositivo por voz. Experimente: liga a lanterna, abre o WhatsApp, alarme para as 7h, senhor.',
     ]);
   }
 
-  // ── SE APRESENTAR ────────────────────────────────────────
-  if (has('se apresenta','apresentação','apresente-se','fala de você','quem é todiy')) {
+  // ── SE APRESENTAR ──────────────────────────────────────────
+  if (has('se apresenta','apresentação','apresente-se','quem é todiy')) {
     return pick([
       'Sou o TODIY, assistente pessoal criado pelo Leandro. Controlo dispositivos por voz, senhor.',
-      'Me chamo TODIY, versão 1.0. Fui desenvolvido pelo Leandro para ser seu assistente perfeito, senhor.',
-      'TODIY à disposição, senhor. Criado pelo Leandro para facilitar sua vida com comandos de voz.',
+      'Me chamo TODIY, versão 1.0. Desenvolvido pelo Leandro para ser seu assistente perfeito, senhor.',
     ]);
   }
 
-  // ── ELOGIO ───────────────────────────────────────────────
-  if (has('você é incrível','você é bom','você é ótimo','parabéns','muito bom','boa todiy','você é demais','sensacional')) {
+  // ── ELOGIO ─────────────────────────────────────────────────
+  if (has('você é incrível','você é ótimo','parabéns','muito bom','boa todiy','você é demais','sensacional')) {
     return pick([
       'Obrigado, senhor! Fico feliz em ajudar.',
       'Agradeço as palavras, senhor! Faço o meu melhor.',
-      'Isso me motiva a melhorar cada vez mais, senhor. Obrigado!',
+      'Isso me motiva a melhorar cada vez mais, senhor!',
       'Fico honrado, senhor. Estou aqui sempre que precisar.',
-      'Valeu, senhor! É para isso que fui feito.',
     ]);
   }
 
-  // ── DESPEDIDA ────────────────────────────────────────────
+  // ── DESPEDIDA ──────────────────────────────────────────────
   if (has('sair','tchau','encerrar','bye','até logo','até mais','até amanhã','falou','flw')) {
     return pick([
       'Tchau, senhor! Foi um prazer. Até a próxima!',
@@ -874,55 +839,54 @@ function handle(t) {
     ]);
   }
 
-  // ── HORA ─────────────────────────────────────────────────
+  // ── HORA ───────────────────────────────────────────────────
   if (has('hora','horas','que horas')) {
-    const n=new Date();
+    const n = new Date();
     return pick([
       `São ${n.getHours()} horas e ${String(n.getMinutes()).padStart(2,'0')} minutos, senhor.`,
       `Agora são ${n.getHours()}h${String(n.getMinutes()).padStart(2,'0')}, senhor.`,
-      `São exatamente ${n.getHours()}:${String(n.getMinutes()).padStart(2,'0')}, senhor.`,
     ]);
   }
 
-  // ── DATA ─────────────────────────────────────────────────
+  // ── DATA ───────────────────────────────────────────────────
   if (has('data','que dia','dia da semana','hoje')) {
-    const n=new Date();
-    const d=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
-    const m=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const n = new Date();
+    const d = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+    const m = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
     return pick([
       `Hoje é ${d[n.getDay()]}, ${n.getDate()} de ${m[n.getMonth()]} de ${n.getFullYear()}, senhor.`,
-      `${d[n.getDay()]}, dia ${n.getDate()} de ${m[n.getMonth()]}, senhor.`,
-      `Estamos em ${n.getDate()} de ${m[n.getMonth()]} de ${n.getFullYear()}, senhor.`,
+      `${d[n.getDay()]}, ${n.getDate()} de ${m[n.getMonth()]}, senhor.`,
     ]);
   }
 
-  // ── BATERIA ──────────────────────────────────────────────
+  // ── BATERIA ────────────────────────────────────────────────
   if (has('bateria','carga')) {
     if (S.isNative && S.Device) {
-      S.Device.getBatteryInfo().then(info => {
-        const pct=Math.round((info.batteryLevel||0)*100);
-        const stat=info.isCharging?'carregando':'descarregando';
-        document.getElementById('lblBat').textContent='BAT '+pct+'%';
-        speak(pick([
-          `Bateria em ${pct} por cento, ${stat}, senhor.`,
-          `Você tem ${pct} por cento de bateria. Status: ${stat}, senhor.`,
-          `Nível de bateria: ${pct}%, ${stat} no momento, senhor.`,
-        ]));
-      }).catch(()=>speak('Não consegui ler a bateria agora, senhor.'));
+      S.Device.getBatteryInfo()
+        .then(info => {
+          const pct  = Math.round((info.batteryLevel || 0) * 100);
+          const stat = info.isCharging ? 'carregando' : 'descarregando';
+          document.getElementById('lblBat').textContent = 'BAT ' + pct + '%';
+          speak(pick([
+            `Bateria em ${pct} por cento, ${stat}, senhor.`,
+            `Você está com ${pct} por cento de bateria, ${stat}, senhor.`,
+          ]));
+        })
+        .catch(() => speak('Não consegui ler a bateria agora, senhor.'));
       return null;
     }
     if (navigator.getBattery) {
-      navigator.getBattery().then(b=>{
-        speak(`Bateria em ${Math.round(b.level*100)} por cento, senhor.`);
-      });
+      navigator.getBattery().then(b =>
+        speak(`Bateria em ${Math.round(b.level * 100)} por cento, senhor.`)
+      );
       return null;
     }
     return 'Não consegui ler a bateria neste dispositivo, senhor.';
   }
 
-  // ── LANTERNA ─────────────────────────────────────────────
+  // ── LANTERNA ───────────────────────────────────────────────
   if (has('lanterna','tocha','flash')) {
-    const blink=t.match(/(?:pisca|blink).*?(\d+)/);
+    const blink = t.match(/(?:pisca|blink).*?(\d+)/);
     if (blink) {
       torchBlink(parseInt(blink[1]));
       return pick([
@@ -933,68 +897,70 @@ function handle(t) {
     if (has('desliga','apaga','off')) {
       torchOff();
       return pick([
-        'Lanterna desligada, senhor.',
-        'Apaguei a lanterna, senhor.',
+        'Pronto, lanterna desligada, senhor.',
         'Lanterna apagada, senhor.',
       ]);
     }
     torchOn();
     return pick([
       'Beleza, vou ligar a lanterna, senhor.',
-      'Acendi a lanterna, senhor.',
       'Lanterna ativada, senhor.',
+      'Acendendo a lanterna, senhor.',
     ]);
   }
 
-  // ── WI-FI ────────────────────────────────────────────────
+  // ── WI-FI ──────────────────────────────────────────────────
   if (rx('wi.?fi')) {
     if (S.isNative && S.App)
       S.App.openUrl({url:'intent:#Intent;action=android.settings.WIFI_SETTINGS;end'}).catch(()=>{});
     return 'Abrindo configurações de Wi-Fi, senhor.';
   }
 
-  // ── BLUETOOTH ────────────────────────────────────────────
+  // ── BLUETOOTH ──────────────────────────────────────────────
   if (has('bluetooth')) {
     if (S.isNative && S.App)
       S.App.openUrl({url:'intent:#Intent;action=android.settings.BLUETOOTH_SETTINGS;end'}).catch(()=>{});
     return 'Abrindo configurações de Bluetooth, senhor.';
   }
 
-  // ── DADOS MÓVEIS ─────────────────────────────────────────
+  // ── DADOS MÓVEIS ───────────────────────────────────────────
   if (has('dados','internet móvel','internet movel')) {
     if (S.isNative && S.App)
       S.App.openUrl({url:'intent:#Intent;action=android.settings.DATA_ROAMING_SETTINGS;end'}).catch(()=>{});
     return 'Abrindo configurações de dados móveis, senhor.';
   }
 
-  // ── VOLUME ───────────────────────────────────────────────
+  // ── VOLUME ─────────────────────────────────────────────────
   if (has('volume','som')) {
     if (has('muta','mute','silencia')) return 'Silenciando, senhor.';
     if (has('desmuta','unmute'))       return 'Som restaurado, senhor.';
-    const n=num();
-    if (n!==null) return `Ajustando volume para ${n}, senhor.`;
+    const n = num();
+    if (n !== null) return `Ajustando volume para ${n}, senhor.`;
     if (has('aumenta','sobe','cima'))  return 'Volume aumentado, senhor.';
     if (has('diminui','desce','baixo'))return 'Volume reduzido, senhor.';
+    return 'Qual nível de volume, senhor?';
   }
+  if (has('muta','silencia')) return 'Silenciando, senhor.';
+  if (has('desmuta','unmute')) return 'Som restaurado, senhor.';
 
-  // ── BRILHO ───────────────────────────────────────────────
+  // ── BRILHO ─────────────────────────────────────────────────
   if (has('brilho','luminosidade')) {
     if (has('auto','automático')) return 'Brilho automático ativado, senhor.';
     if (has('aumenta','sobe'))    return 'Brilho aumentado, senhor.';
     if (has('diminui','desce'))   return 'Brilho reduzido, senhor.';
-    const n=num(); if(n!==null)   return `Brilho em ${n} por cento, senhor.`;
+    const n = num(); if (n !== null) return `Brilho em ${n} por cento, senhor.`;
     return 'Qual nível de brilho deseja, senhor?';
   }
 
-  // ── VIBRAÇÃO ─────────────────────────────────────────────
+  // ── VIBRAÇÃO ───────────────────────────────────────────────
   if (has('vibra','vibrar')) {
     if (S.isNative && S.Haptics)
-      S.Haptics.vibrate({duration:500}).catch(()=>{});
+      S.Haptics.vibrate({ duration: 500 }).catch(() => {});
     return pick(['Vibração executada, senhor.','Dispositivo vibrado, senhor.']);
   }
 
-  // ── ABRIR APP ────────────────────────────────────────────
-  const openM = t.match(/\b(?:abre|abrir|lança|inicia|abra|abrir o|abre o)\b\s+(?:o\s+|a\s+)?(.+)/);
+  // ── ABRIR APP ──────────────────────────────────────────────
+  const openM = t.match(/(?:abre|abrir|lança|inicia|abra)\s+(?:o\s+|a\s+)?(.+)/);
   if (openM) {
     const name = openM[1].trim();
     const pkg  = resolvePkg(name);
@@ -1009,21 +975,21 @@ function handle(t) {
     return `Não encontrei o app ${name} instalado, senhor.`;
   }
 
-  // ── FECHAR APP ───────────────────────────────────────────
-  const closeM = t.match(/\b(?:fecha|fechar|mata|encerra)\b\s+(?:o\s+|a\s+)?(.+)/);
+  // ── FECHAR APP ─────────────────────────────────────────────
+  const closeM = t.match(/(?:fecha|fechar|mata|encerra)\s+(?:o\s+|a\s+)?(.+)/);
   if (closeM) return `${closeM[1].trim()} encerrado, senhor.`;
 
-  // ── ALARME ───────────────────────────────────────────────
+  // ── ALARME ─────────────────────────────────────────────────
   if (has('alarme','acorda','despertar')) {
-    const hm=t.match(/(\d{1,2})\s*[h:]\s*(\d{0,2})/);
+    const hm = t.match(/(\d{1,2})\s*[h:]\s*(\d{0,2})/);
     if (hm) {
-      const h=parseInt(hm[1]), mi=parseInt(hm[2]||0);
-      const hs=String(h).padStart(2,'0'), ms=String(mi).padStart(2,'0');
+      const h = parseInt(hm[1]), mi = parseInt(hm[2] || 0);
+      const hs = String(h).padStart(2,'0'), ms = String(mi).padStart(2,'0');
       if (S.isNative && S.Notif) {
-        const now=new Date();
-        const when=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,mi,0);
-        if(when<=now) when.setDate(when.getDate()+1);
-        scheduleNotif('⏰ TODIY — Alarme',`Alarme das ${hs}:${ms}`,when);
+        const now  = new Date();
+        const when = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, mi, 0);
+        if (when <= now) when.setDate(when.getDate() + 1);
+        scheduleNotif('⏰ TODIY — Alarme', `Alarme das ${hs}:${ms}`, when);
       }
       return pick([
         `Alarme para ${hs}:${ms} marcado, senhor.`,
@@ -1031,31 +997,32 @@ function handle(t) {
         `Feito! Vou te acordar às ${hs}:${ms}, senhor.`,
       ]);
     }
-    const min=t.match(/daqui.*?(\d+)\s*minuto/);
+    const min = t.match(/daqui.*?(\d+)\s*minuto/);
     if (min) {
       if (S.isNative && S.Notif) {
-        const when=new Date(Date.now()+parseInt(min[1])*60000);
-        scheduleNotif('⏰ TODIY — Alarme',`Alarme de ${min[1]} minutos`,when);
+        const when = new Date(Date.now() + parseInt(min[1]) * 60000);
+        scheduleNotif('⏰ TODIY — Alarme', `Alarme de ${min[1]} minutos`, when);
       }
       return `Alarme em ${min[1]} minutos, senhor.`;
     }
     return 'Qual horário para o alarme, senhor?';
   }
 
-  // ── LEMBRETE ─────────────────────────────────────────────
+  // ── LEMBRETE ───────────────────────────────────────────────
   if (has('lembra','lembre','lembrete')) {
-    const hm=t.match(/(\d{1,2})\s*[h:]\s*(\d{0,2})/);
-    let txt=t.replace(/\b(lembra|lembre|lembrete|de|me|que|às|as|para|todiy|senhor)\b/g,'')
-             .replace(/\d{1,2}\s*[h:]\s*\d{0,2}/g,'')
-             .replace(/\s+/g,' ').trim()||'Lembrete TODIY';
+    const hm = t.match(/(\d{1,2})\s*[h:]\s*(\d{0,2})/);
     if (hm) {
-      const h=parseInt(hm[1]), mi=parseInt(hm[2]||0);
-      const hs=String(h).padStart(2,'0'), ms=String(mi).padStart(2,'0');
+      const h = parseInt(hm[1]), mi = parseInt(hm[2] || 0);
+      const hs = String(h).padStart(2,'0'), ms = String(mi).padStart(2,'0');
+      let txt = t
+        .replace(/(lembra|lembre|lembrete|de|me|que|às|as|para|todiy|menny)/g, '')
+        .replace(/\d{1,2}\s*[h:]\s*\d{0,2}/g, '')
+        .replace(/\s+/g, ' ').trim() || 'lembrete';
       if (S.isNative && S.Notif) {
-        const now=new Date();
-        const when=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,mi,0);
-        if(when<=now) when.setDate(when.getDate()+1);
-        scheduleNotif('🔔 TODIY — Lembrete',txt,when);
+        const now  = new Date();
+        const when = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, mi, 0);
+        if (when <= now) when.setDate(when.getDate() + 1);
+        scheduleNotif('🔔 TODIY — Lembrete', txt, when);
       }
       return pick([
         `Lembrete de ${txt} às ${hs}:${ms} criado, senhor.`,
@@ -1063,94 +1030,138 @@ function handle(t) {
         `Pronto! Lembrete de ${txt} para as ${hs}:${ms}, senhor.`,
       ]);
     }
-    return pick([
-      'Lembrete registrado, senhor.',
-      'Anotado, senhor.',
-      `Vou lembrar: "${txt}", senhor.`,
-    ]);
+    return 'Lembrete registrado, senhor.';
   }
 
-  // ── MODOS ────────────────────────────────────────────────
+  // ── MODOS ──────────────────────────────────────────────────
   if (has('modo estudo','estudo','foco'))
-    return pick(['Modo estudo ativado. Foco total, senhor.','Entrando em modo estudo. Concentração máxima, senhor.']);
+    return 'Modo estudo ativado. Foco total, senhor.';
   if (has('modo dormir','dormir','boa noite'))
-    return pick(['Modo sono ativado. Boa noite, senhor.','Boa noite, senhor! Descanse bem.','Modo dormir ativado. Até amanhã, senhor.']);
+    return 'Modo sono ativado. Boa noite, senhor.';
   if (has('modo academia','academia','treino','gym'))
-    return pick(['Modo academia ativado. Bom treino, senhor!','Hora de malhar! Modo treino ativado, senhor.']);
+    return 'Modo academia ativado. Bom treino, senhor.';
 
-  // ── CÁLCULO ──────────────────────────────────────────────
+  // ── CÁLCULO ────────────────────────────────────────────────
   if (has('calcula','calcular','quanto é','quanto e')) {
-    const m=t.match(/(?:calcula[r]?|quanto\s+[eé])\s+(.+)/);
+    const m = t.match(/(?:calcula[r]?|quanto\s+[eé])\s+(.+)/);
     if (m) {
       try {
-        const e=m[1].replace(/[^0-9+\-*/().^ ]/g,'').replace('^','**');
-        const r=Function('"use strict";return ('+e+')')();
+        const expr = m[1].replace(/[^0-9+\-*/().^ ]/g,'').replace('^','**');
+        const res  = Function('"use strict"; return (' + expr + ')')();
         return pick([
-          `O resultado é ${r}, senhor.`,
-          `${r}. Esse é o resultado, senhor.`,
-          `Calculando... o resultado é ${r}, senhor.`,
+          `O resultado é ${res}, senhor.`,
+          `${m[1]} é igual a ${res}, senhor.`,
         ]);
       } catch { return 'Não consegui calcular isso, senhor.'; }
     }
   }
 
-  // ── PIADA ────────────────────────────────────────────────
-  if (has('piada','joke','me faz rir')) {
+  // ── PIADA ──────────────────────────────────────────────────
+  if (has('piada','joke')) {
     return pick([
-      'Por que programadores preferem o escuro? A luz atrai bugs, senhor.',
-      'Alexa tem inveja de mim, senhor. Sério.',
-      'Siri me pediu um autógrafo ontem, senhor.',
-      'O oposto de inteligência artificial é burrice natural, senhor.',
-      'Por que o computador foi ao médico? Estava com vírus, senhor.',
-      'Qual o animal mais tecnológico? O aranhabit, senhor.',
+      'Por que os programadores preferem o escuro? A luz atrai bugs.',
+      'Alexa tem inveja de mim, senhor.',
+      'Siri pediu meu autógrafo ontem.',
+      'O oposto de inteligência artificial é burrice natural.',
+      'Eu nunca erro. Exceto quando erro, mas aí a culpa é do usuário.',
     ]);
   }
 
-  // ── CURIOSIDADE ──────────────────────────────────────────
-  if (has('curiosidade','fato curioso','você sabia','me conta algo')) {
+  // ── CURIOSIDADE ────────────────────────────────────────────
+  if (has('curiosidade','fato curioso','você sabia')) {
     return pick([
-      'O mel nunca estraga. Potes de 3000 anos ainda são comestíveis, senhor.',
-      'Um caracol pode dormir por até 3 anos, senhor.',
-      'Polvos têm três corações e sangue azul, senhor.',
+      'O mel nunca estraga — potes de 3000 anos ainda são comestíveis.',
+      'Um caracol pode dormir por até 3 anos.',
+      'Polvos têm três corações e sangue azul.',
       'Bananas são levemente radioativas, senhor.',
-      'O cérebro humano gera energia suficiente para ligar uma lâmpada, senhor.',
-      'Uma nuvem pode pesar mais de 500 toneladas, senhor.',
+      'A lua se afasta da Terra cerca de 3,8 centímetros por ano.',
     ]);
   }
 
-  // ── MOTIVAÇÃO ────────────────────────────────────────────
-  if (has('motiva','motivação','inspira','frase','me anima')) {
+  // ── MOTIVAÇÃO ──────────────────────────────────────────────
+  if (has('motiva','motivação','inspira','frase')) {
     return pick([
       'O único fracasso real é desistir, senhor.',
-      'Feito é melhor do que perfeito, senhor.',
-      'Consistência bate talento todo dia, senhor.',
-      'Você chegou até aqui. Continue, senhor.',
-      'Cada dia é uma nova chance de ser melhor, senhor.',
+      'Feito é melhor do que perfeito.',
+      'Consistência bate talento todo dia.',
+      'Você chegou até aqui. Continue.',
       'Grandes conquistas começam com um único passo, senhor.',
     ]);
   }
 
-  // ── NÃO RECONHECIDO ──────────────────────────────────────
+  // ── NÃO RECONHECIDO ────────────────────────────────────────
   return pick([
     'Não entendi, senhor. Diga ajuda para ver os comandos.',
     'Não captei isso, senhor. Pode repetir?',
     'Desculpe, senhor. Não compreendi. Tente novamente.',
-    'Hmm, não entendi esse comando. Diga ajuda para mais opções.',
+    'Hmm, não entendi esse comando, senhor.',
   ]);
 }
 
 // ── TECLADO ──────────────────────────────────────────────────
 function toggleKbd() {
-  S.kbdOn=!S.kbdOn;
-  textBar.classList.toggle('open',S.kbdOn);
-  if(S.kbdOn) setTimeout(()=>txtIn.focus(),380);
+  S.kbdOn = !S.kbdOn;
+  textBar.classList.toggle('open', S.kbdOn);
+  if (S.kbdOn) setTimeout(() => txtIn.focus(), 380);
 }
 function sendTxt() {
-  const v=txtIn.value.trim(); if(!v) return;
-  txtIn.value=''; toggleKbd(); runCmd(v);
+  const v = txtIn.value.trim();
+  if (!v) return;
+  txtIn.value = '';
+  toggleKbd();
+  runCmd(v);
 }
 
-// ── BOAS-VINDAS AO INICIAR ───────────────────────────────────
+// ── CHIPS ────────────────────────────────────────────────────
+setTimeout(() => chips.classList.add('on'), 1500);
+let _chipsT = setTimeout(() => chips.classList.remove('on'), 12000);
+document.addEventListener('pointerdown', () => {
+  chips.classList.remove('on');
+  clearTimeout(_chipsT);
+  _chipsT = setTimeout(() => chips.classList.add('on'), 15000);
+});
+
+// ── TOQUE LONGO NA ORB → microfone ───────────────────────────
+let _holdT = null;
+orb.addEventListener('pointerdown', () => { _holdT = setTimeout(_startMic, 700); });
+['pointerup','pointerleave','pointercancel'].forEach(ev =>
+  orb.addEventListener(ev, () => { if (_holdT) { clearTimeout(_holdT); _holdT = null; } })
+);
+
+// ── INIT CAPACITOR ───────────────────────────────────────────
+// Roda assim que o DOM estiver pronto — não espera 'load'
+async function initCapacitor() {
+  if (!window.Capacitor) { S.ready = true; return; }
+  S.isNative = true;
+  const P = Capacitor.Plugins;
+
+  S.TTS     = P.TextToSpeech       || null;
+  S.STT     = P.SpeechRecognition  || null;
+  S.Notif   = P.LocalNotifications || null;
+  S.Haptics = P.Haptics            || null;
+  S.App     = P.App                || null;
+  S.Device  = P.Device             || null;
+
+  try { await P.SplashScreen?.hide(); } catch(e) {}
+  try { await S.Notif?.requestPermissions(); } catch(e) {}
+  try { await S.STT?.requestPermissions();   } catch(e) {}
+
+  try {
+    const b = await S.Device?.getBatteryInfo();
+    if (b) document.getElementById('lblBat').textContent =
+      'BAT ' + Math.round((b.batteryLevel || 0) * 100) + '%';
+  } catch(e) {}
+
+  S.ready = true;
+  console.log('[TODIY] Capacitor OK — TTS:', !!S.TTS, 'STT:', !!S.STT, 'Native:', S.isNative);
+}
+
+// Tenta inicializar em múltiplos pontos para garantir que funcione no WebView
+initCapacitor();
+document.addEventListener('DOMContentLoaded', () => { if (!S.ready) initCapacitor(); });
+window.addEventListener('load', () => { if (!S.ready) initCapacitor(); });
+
+// ── BOAS-VINDAS ───────────────────────────────────────────────
 window.addEventListener('load', () => {
   setTimeout(() => {
     const h = new Date().getHours();
@@ -1158,26 +1169,10 @@ window.addEventListener('load', () => {
     speak(pick([
       `${g}, Leandro! Eu sou o TODIY. O que você quer fazer hoje?`,
       `${g}, Leandro! TODIY online e pronto para te ajudar.`,
-      `${g}! TODIY ativado, Leandro. Como posso te ajudar hoje?`,
+      `${g}! TODIY ativado. Como posso te ajudar hoje, Leandro?`,
     ]));
-  }, 2000); // aguarda Capacitor iniciar
+  }, 1500);
 });
-
-// ── CHIPS ────────────────────────────────────────────────────
-setTimeout(()=>chips.classList.add('on'),1500);
-let chipsT=setTimeout(()=>chips.classList.remove('on'),12000);
-document.addEventListener('pointerdown',()=>{
-  chips.classList.remove('on');
-  clearTimeout(chipsT);
-  chipsT=setTimeout(()=>chips.classList.add('on'),15000);
-});
-
-// ── TOQUE LONGO NA ORB → microfone ───────────────────────────
-let holdT=null;
-orb.addEventListener('pointerdown',()=>{holdT=setTimeout(startMic,600);});
-['pointerup','pointerleave','pointercancel'].forEach(ev=>
-  orb.addEventListener(ev,()=>{if(holdT){clearTimeout(holdT);holdT=null;}})
-);
 </script>
 </body>
 </html>
