@@ -11,93 +11,80 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Baixa o código
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Node.js
       - name: Node.js 18
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
-      # 3. Instala dependências
       - name: Instalar dependências
         run: npm install --legacy-peer-deps
 
-      # 4. Java
       - name: Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 5. Android SDK
       - name: Android SDK
         uses: android-actions/setup-android@v3
 
-      # 6. Build tools
       - name: Build Tools
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+        run: |
+          sdkmanager "platforms;android-34" \
+                     "build-tools;34.0.0"   \
+                     "platform-tools"
 
-      # 7. Adiciona Android ao Capacitor
       - name: Capacitor add android
         run: npx cap add android
 
-      # 8. Sincroniza www/ com Android
       - name: Capacitor sync
         run: npx cap sync android
 
-      # 9. Injeta permissões no AndroidManifest (ESSENCIAL para lanterna, mic, notificações)
+      # ── PASSO CRÍTICO: injeta todas as permissões necessárias ──
       - name: Injetar permissões no AndroidManifest.xml
         run: |
-          FILE="android/app/src/main/AndroidManifest.xml"
-          echo "=== Manifest antes ==="
-          cat "$FILE"
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
 
-          # Injeta após a tag <manifest ...>
-          PERMISSIONS='
-    <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-permission android:name="android.permission.FLASHLIGHT"/>
-    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-feature android:name="android.hardware.camera.flash" android:required="false"/>
-    <uses-feature android:name="android.hardware.microphone" android:required="true"/>'
-
-          # Só adiciona se CAMERA ainda não estiver no manifesto
-          if ! grep -q "android.permission.CAMERA" "$FILE"; then
-            # Insere depois da primeira linha <uses-permission ...> existente
-            FIRST_PERM=$(grep -n "uses-permission" "$FILE" | head -1 | cut -d: -f1)
-            if [ -n "$FIRST_PERM" ]; then
-              sed -i "${FIRST_PERM}a\\${PERMISSIONS}" "$FILE"
-            else
-              # Não tem nenhuma permissão ainda — insere após <manifest ...>
-              sed -i 's|<application|'"${PERMISSIONS}"'\n    <application|' "$FILE"
+          inject() {
+            local PERM="$1"
+            if ! grep -q "$PERM" "$MANIFEST"; then
+              sed -i "s|</manifest>|    <uses-permission android:name=\"$PERM\"/>\n</manifest>|" "$MANIFEST"
+              echo "  + $PERM"
             fi
-            echo "Permissões adicionadas!"
-          else
-            echo "Permissões já existem."
+          }
+
+          echo "Injetando permissões..."
+          inject "android.permission.CAMERA"
+          inject "android.permission.FLASHLIGHT"
+          inject "android.permission.RECORD_AUDIO"
+          inject "android.permission.MODIFY_AUDIO_SETTINGS"
+          inject "android.permission.POST_NOTIFICATIONS"
+          inject "android.permission.SCHEDULE_EXACT_ALARM"
+          inject "android.permission.USE_EXACT_ALARM"
+          inject "android.permission.VIBRATE"
+          inject "android.permission.WAKE_LOCK"
+          inject "android.permission.RECEIVE_BOOT_COMPLETED"
+
+          # Feature de flash (não obrigatória — permite instalar sem câmera de flash)
+          if ! grep -q "camera.flash" "$MANIFEST"; then
+            sed -i "s|</manifest>|    <uses-feature android:name=\"android.hardware.camera.flash\" android:required=\"false\"/>\n</manifest>|" "$MANIFEST"
+            echo "  + camera.flash feature"
           fi
 
-          echo "=== Manifest depois ==="
-          cat "$FILE"
+          echo "Manifest final:"
+          cat "$MANIFEST"
 
-      # 10. Gradle build
       - name: Permissão Gradle
         run: chmod +x android/gradlew
 
-      - name: Build APK
+      - name: Compilar APK
         working-directory: android
         run: ./gradlew assembleDebug
 
-      # 11. Upload do APK
-      - name: Upload APK
+      - name: Salvar APK
         uses: actions/upload-artifact@v4
         with:
           name: TODIY-APK
